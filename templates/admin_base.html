@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Console{% endblock %} - FinTrack Enterprise</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom Modern Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Dedicated Admin Portal Styling */
+        .admin-navbar {
+            background: #0f172a !important; /* Premium Slate Dark */
+            border-bottom: 1px solid #1e293b;
+            padding: 0.85rem 1.5rem;
+        }
+        .admin-brand {
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: #ffffff !important;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            text-decoration: none;
+        }
+        .admin-brand-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9px;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        .admin-nav-link {
+            color: #94a3b8 !important;
+            font-weight: 600;
+            font-size: 0.88rem;
+            padding: 0.5rem 0.85rem !important;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+        .admin-nav-link:hover {
+            color: #ffffff !important;
+            background: #1e293b;
+        }
+        .admin-nav-link.active {
+            color: #ffffff !important;
+            background: #334155;
+        }
+        .admin-badge {
+            font-size: 0.72rem;
+            letter-spacing: 0.05em;
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            padding: 0.25rem 0.55rem;
+            border-radius: 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .admin-footer {
+            background: #ffffff;
+            border-top: 1px solid var(--gray-200);
+            padding: 1.25rem 0;
+            margin-top: auto;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Standalone Admin Navbar (Completely separate from user banking navigation) -->
+    <nav class="navbar navbar-expand-lg admin-navbar sticky-top">
+        <div class="container-fluid px-4">
+            <a class="admin-brand" href="{{ url_for('admin_portal') }}">
+                <div class="admin-brand-icon">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <span>FinTrack <span style="font-weight: 400; opacity: 0.85;">Enterprise</span></span>
+                <span class="admin-badge ms-2">Admin Portal</span>
+            </a>
+
+            <button class="navbar-toggler text-white border-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
+                <i class="bi bi-list text-white fs-4"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="adminNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-1">
+                    <li class="nav-item">
+                        <a class="admin-nav-link active" href="{{ url_for('admin_portal') }}">
+                            <i class="bi bi-speedometer2 me-1"></i> System Overview
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="admin-nav-link" href="#user-directory">
+                            <i class="bi bi-people-fill me-1"></i> User Governance
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="admin-nav-link" href="#system-audit">
+                            <i class="bi bi-shield-shaded me-1"></i> Audit & Security Events
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2 text-white">
+                        <div class="category-avatar" style="background: #334155; color: #38bdf8; width: 34px; height: 34px; font-size: 0.9rem;">
+                            <i class="bi bi-person-fill-lock"></i>
+                        </div>
+                        <div class="d-none d-md-block text-start">
+                            <div class="fw-bold small text-white lh-1">System Administrator</div>
+                            <div class="text-secondary" style="font-size: 0.75rem;">admin@fintrack.com</div>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light px-3 py-1">
+                        <i class="bi bi-box-arrow-right me-1"></i> Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Admin Content Area -->
+    <div class="container-fluid px-4 py-4 flex-grow-1">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Admin Dedicated Footer -->
+    <footer class="admin-footer">
+        <div class="container-fluid px-4">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-md-start text-muted">
+                    <strong class="text-dark">FinTrack Admin Console</strong> &bull; Oracle Database 19c Enterprise Engine &bull; Role-Based Access Control
+                </div>
+                <div class="col-md-6 text-md-end text-muted">
+                    <span class="badge bg-light text-secondary border">
+                        <i class="bi bi-shield-check text-success me-1"></i> Financial Privacy Active: Zero-Balance Visibility
+                    </span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

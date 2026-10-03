@@ -1,0 +1,49 @@
+{% extends "auth_base.html" %}
+
+{% block title %}Create Account{% endblock %}
+
+{% block content %}
+<div class="card card-custom p-4 p-md-5 shadow-sm border-0">
+    <div class="text-center mb-4">
+        <div class="navbar-brand-icon mx-auto mb-3" style="width: 52px; height: 52px; font-size: 1.5rem;">
+            <i class="bi bi-person-plus"></i>
+        </div>
+        <h4 class="fw-bold mb-1">Create an Account</h4>
+        <p class="text-muted small">Start tracking your finances with FinTrack</p>
+    </div>
+
+    <form action="{{ url_for('register') }}" method="POST">
+        <div class="mb-3">
+            <label class="form-label fw-bold small text-muted text-uppercase">Full Name</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-person"></i></span>
+                <input type="text" name="name" class="form-control border-start-0" placeholder="e.g. Harshith K" required autofocus>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold small text-muted text-uppercase">Email Address</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-envelope"></i></span>
+                <input type="email" name="email" class="form-control border-start-0" placeholder="name@example.com" required>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-muted text-uppercase">Password</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-lock"></i></span>
+                <input type="password" name="password" class="form-control border-start-0" placeholder="Create a password" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold">
+            Create Account
+        </button>
+    </form>
+
+    <div class="text-center mt-4 small">
+        Already have an account? <a href="{{ url_for('login') }}" class="text-decoration-none fw-bold text-primary">Sign in</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Top Welcome & Action Header -->
+<div class="row align-items-center mb-4">
+    <div class="col-md-7">
+        <h3 class="fw-bold mb-1">Financial Overview</h3>
+        <p class="text-muted mb-0">Here is your financial pulse for <strong>{{ current_month }}</strong>.</p>
+    </div>
+    <div class="col-md-5 text-md-end mt-3 mt-md-0">
+        <div class="d-inline-flex gap-2">
+            <a href="{{ url_for('transfer') }}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left-right me-1"></i> Send Money
+            </a>
+            <a href="{{ url_for('transactions') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Add Transaction
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Financial Cycle & Burn Rate Tracker -->
+<div class="card card-custom p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-left: 4px solid #4f46e5 !important;">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary text-white text-uppercase px-2 py-1 small">Active Cycle</span>
+                <h5 class="fw-bold text-dark mb-0">{{ cycle.month_name }} Financial Cycle</h5>
+                <span class="text-muted small">&bull; Day {{ cycle.current_day }} of {{ cycle.total_days }}</span>
+            </div>
+            <p class="text-muted small mb-0">
+                {% if cycle.days_remaining > 0 %}
+                Cycle active: <strong>{{ cycle.days_remaining }} day(s) remaining</strong> before month-end reset.
+                {% else %}
+                Monthly cycle closed.
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge {% if cycle.burn_status == 'On Track' %}badge-soft-success{% elif cycle.burn_status == 'Over Budget' %}badge-soft-danger{% else %}badge-soft-warning{% endif %} px-3 py-2 fw-semibold">
+                <i class="bi bi-speedometer2 me-1"></i> Cycle Pace: {{ cycle.burn_status }}
+            </span>
+            <a href="{{ url_for('recurring') }}" class="btn btn-sm btn-outline-primary" title="View scheduled bills">
+                <i class="bi bi-calendar-check me-1"></i> Billing Schedule
+            </a>
+            <a href="{{ url_for('transactions', month=cycle.month) }}" class="btn btn-sm btn-outline-secondary" title="View transactions in this cycle">
+                <i class="bi bi-receipt me-1"></i> Cycle Ledger
+            </a>
+        </div>
+    </div>
+
+    <!-- Cycle Progress Timeline Bar -->
+    <div class="position-relative mb-3">
+        <div class="progress" style="height: 10px; border-radius: 6px;">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ cycle.cycle_progress_percent }}%;" aria-valuenow="{{ cycle.cycle_progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div class="d-flex justify-content-between text-muted small mt-1" style="font-size: 0.78rem;">
+            <span><i class="bi bi-calendar-event me-1"></i> Day 1 (Cycle Start)</span>
+            <span class="fw-bold text-primary">Day {{ cycle.current_day }} ({{ cycle.cycle_progress_percent }}% of cycle elapsed)</span>
+            <span>Day {{ cycle.total_days }} (Cycle Close) <i class="bi bi-calendar-check ms-1"></i></span>
+        </div>
+    </div>
+
+    <!-- Cycle Key Insights Row -->
+    <div class="row g-3 pt-3 border-top">
+        <div class="col-6 col-md-3">
+            <div class="small text-muted mb-1"><i class="bi bi-arrow-down-left text-success me-1"></i> Cycle Inflow</div>
+            <div class="fw-bold text-success fs-6">₹{{ "{:,.2f}".format(cycle.cycle_inflow) }}</div>
+            <div class="text-muted" style="font-size: 0.75rem;">Income credited</div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="small text-muted mb-1"><i class="bi bi-arrow-up-right text-danger me-1"></i> Cycle Outflow</div>
+            <div class="fw-bold text-danger fs-6">₹{{ "{:,.2f}".format(cycle.cycle_outflow) }}</div>
+            <div class="text-muted" style="font-size: 0.75rem;">Actual spent to date</div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="small text-muted mb-1"><i class="bi bi-clock-history text-warning me-1"></i> Upcoming Bills</div>
+            <div class="fw-bold text-dark fs-6">₹{{ "{:,.2f}".format(cycle.upcoming_bills) }}</div>
+            <div class="text-muted" style="font-size: 0.75rem;">Scheduled recurring bills</div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="small text-muted mb-1"><i class="bi bi-shield-check text-primary me-1"></i> Safe Daily Allowance</div>
+            <div class="fw-bold text-primary fs-6">₹{{ "{:,.2f}".format(cycle.safe_daily_allowance) }} <span class="text-muted fw-normal" style="font-size: 0.72rem;">/ day</span></div>
+            <div class="text-muted" style="font-size: 0.75rem;">{{ cycle.days_remaining }} day(s) remaining pace</div>
+        </div>
+    </div>
+</div>
+
+<!-- 4 Key Financial Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Net Balance</div>
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+            </div>
+            <div class="stat-value text-dark">₹{{ "{:,.2f}".format(total_balance) }}</div>
+            <div class="small text-muted mt-2">
+                <i class="bi bi-shield-check text-success me-1"></i> Across {{ total_accounts }} active accounts
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Monthly Income</div>
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-arrow-down-left"></i>
+                </div>
+            </div>
+            <div class="stat-value text-success">₹{{ "{:,.2f}".format(total_income) }}</div>
+            <div class="small text-muted mt-2">
+                <i class="bi bi-calendar-event me-1"></i> Total credits in {{ current_month }}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Monthly Spending</div>
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-arrow-up-right"></i>
+                </div>
+            </div>
+            <div class="stat-value text-danger">₹{{ "{:,.2f}".format(total_expense) }}</div>
+            <div class="small text-muted mt-2">
+                <i class="bi bi-credit-card me-1"></i> Total debits in {{ current_month }}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Net Savings</div>
+                <div class="stat-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-piggy-bank"></i>
+                </div>
+            </div>
+            {% set net_savings = total_income - total_expense %}
+            <div class="stat-value {% if net_savings >= 0 %}text-success{% else %}text-danger{% endif %}">
+                ₹{{ "{:,.2f}".format(net_savings) }}
+            </div>
+            <div class="small text-muted mt-2">
+                <i class="bi bi-graph-up me-1"></i> Cashflow balance
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Middle Section: Spending Breakdown & Budgets -->
+<div class="row g-4 mb-4">
+    <!-- Category Spend Breakdown Chart -->
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Expense Breakdown</h5>
+                <span class="badge bg-light text-dark border">{{ current_month }}</span>
+            </div>
+            {% if category_spend %}
+            <div style="height: 280px; position: relative;">
+                <canvas id="expenseChart"></canvas>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-pie-chart fs-1 text-secondary"></i>
+                <p class="mt-2 mb-0">No expenses recorded for {{ current_month }}.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Active Budgets Health -->
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold mb-0">Monthly Budgets</h5>
+                    <span class="small text-muted">Track your category limits</span>
+                </div>
+                <a href="{{ url_for('budgets') }}" class="btn btn-sm btn-outline-secondary">Manage</a>
+            </div>
+
+            {% if budgets %}
+            <div class="d-flex flex-column gap-3 mt-1">
+                {% for b in budgets %}
+                <div class="p-3 rounded-3 bg-light border">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-dark">{{ b.category_name }}</span>
+                        <div class="small">
+                            <span class="fw-bold">₹{{ "{:,.2f}".format(b.actual_spent) }}</span> / 
+                            <span class="text-muted">₹{{ "{:,.2f}".format(b.limit_amount) }}</span>
+                            {% if b.status == 'EXCEEDED' %}
+                            <span class="badge-soft-danger ms-2">Exceeded</span>
+                            {% elif b.status == 'WARNING' %}
+                            <span class="badge-soft-warning ms-2">Near Limit</span>
+                            {% else %}
+                            <span class="badge-soft-success ms-2">On Track</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="progress-clean">
+                        {% set p = b.percent_used if b.percent_used <= 100 else 100 %}
+                        <div class="progress-bar {% if b.status == 'EXCEEDED' %}bg-danger{% elif b.status == 'WARNING' %}bg-warning{% else %}bg-success{% endif %}" 
+                             role="progressbar" style="width: {{ p }}%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2 small text-muted">
+                        <span>{{ b.percent_used }}% utilized</span>
+                        <span>₹{{ "{:,.2f}".format(b.remaining_amount) }} remaining</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-wallet2 fs-1 text-secondary"></i>
+                <p class="mt-2 mb-0">No active budgets set for {{ current_month }}.</p>
+                <a href="{{ url_for('budgets') }}" class="btn btn-sm btn-primary mt-2">Set Budget</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions Ledger -->
+<div class="card card-custom p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="fw-bold mb-0">Recent Activity</h5>
+            <span class="small text-muted">Your latest transactions across all accounts</span>
+        </div>
+        <a href="{{ url_for('transactions') }}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-modern">
+            <thead>
+                <tr>
+                    <th>Ref #</th>
+                    <th>Date</th>
+                    <th>Payee / Description</th>
+                    <th>Account</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if recent_transactions %}
+                    {% for t in recent_transactions %}
+                    <tr>
+                        <td class="text-muted font-monospace small">#TXN-{{ t.transaction_id }}</td>
+                        <td class="text-muted small">{{ t.formatted_date }}</td>
+                        <td>
+                            {% if t.vendor %}
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-light text-dark border fw-bold">
+                                    <i class="bi bi-shop me-1 text-primary"></i>{{ t.vendor }}
+                                </span>
+                                <span class="fw-bold text-dark">{{ t.description }}</span>
+                            </div>
+                            {% else %}
+                            <span class="fw-bold text-dark">{{ t.description or 'Transaction' }}</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ t.account_type }}</span></td>
+                        <td><span class="badge-soft-primary">{{ t.category_name }}</span></td>
+                        <td>
+                            {% if t.txn_type == 'Credit' %}
+                            <span class="badge-soft-success"><i class="bi bi-arrow-down-left me-1"></i>Credit</span>
+                            {% else %}
+                            <span class="badge-soft-danger"><i class="bi bi-arrow-up-right me-1"></i>Debit</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-bold {% if t.txn_type == 'Credit' %}text-success{% else %}text-danger{% endif %}">
+                            {% if t.txn_type == 'Credit' %}+{% else %}-{% endif %}₹{{ "{:,.2f}".format(t.amount) }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">No recent transactions recorded.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    {% if category_spend %}
+    const catLabels = {{ category_spend | map(attribute='category_name') | list | tojson }};
+    const catValues = {{ category_spend | map(attribute='total') | list | tojson }};
+
+    const ctx = document.getElementById('expenseChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: catLabels,
+            datasets: [{
+                data: catValues,
+                backgroundColor: [
+                    '#4f46e5', '#06b6d4', '#10b981', '#f59e0b', 
+                    '#ef4444', '#8b5cf6', '#ec4899', '#64748b'
+                ],
+                borderWidth: 3,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 14,
+                        font: { size: 12, family: 'Plus Jakarta Sans', weight: '600' }
+                    }
+                }
+            },
+            cutout: '70%'
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

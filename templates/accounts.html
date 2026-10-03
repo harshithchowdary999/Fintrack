@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Accounts{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Your Accounts & Wallets</h3>
+        <p class="text-muted mb-0">Manage balances, open new accounts, and review active deposit methods.</p>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAccountModal">
+        <i class="bi bi-plus-lg me-1"></i> Open New Account
+    </button>
+</div>
+
+<!-- Virtual Bank Cards Grid -->
+<div class="row g-4 mb-4">
+    {% for acc in accounts %}
+    <div class="col-md-6 col-lg-4">
+        {% if acc.account_type == 'Savings' %}
+            {% set card_bg = 'savings-bg' %}
+        {% elif acc.account_type == 'Current' %}
+            {% set card_bg = 'current-bg' %}
+        {% elif acc.account_type == 'Wallet' %}
+            {% set card_bg = 'wallet-bg' %}
+        {% else %}
+            {% set card_bg = 'credit-bg' %}
+        {% endif %}
+
+        <div class="bank-card {{ card_bg }}">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-uppercase small fw-bold opacity-75 letter-spacing">{{ acc.account_type }} Account</span>
+                    <div class="chip-icon mt-2"></div>
+                </div>
+                <div class="text-end">
+                    {% if acc.status == 'Frozen' %}
+                    <span class="badge bg-danger text-white shadow-sm"><i class="bi bi-snow2 me-1"></i>FROZEN</span>
+                    {% else %}
+                    <span class="badge bg-white bg-opacity-25 text-white"><i class="bi bi-check-circle me-1"></i>ACTIVE</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="my-3">
+                <div class="small opacity-75 text-uppercase">Available Balance</div>
+                <div class="fs-2 fw-bold">₹{{ "{:,.2f}".format(acc.balance) }}</div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-end pt-2 border-top border-white border-opacity-25">
+                <div>
+                    <div class="small opacity-75">Account Number</div>
+                    <div class="fw-bold font-monospace">•••• •••• •••• {{ "%04d"|format(acc.account_id) }}</div>
+                </div>
+                <div class="text-end">
+                    <div class="small opacity-75">Opened</div>
+                    <div class="fw-bold">{{ acc.opened_date }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick actions for this account -->
+        <div class="d-flex gap-2 mt-2">
+            <a href="{{ url_for('transfer') }}" class="btn btn-sm btn-outline-secondary flex-grow-1 py-2">
+                <i class="bi bi-arrow-left-right me-1"></i> Transfer
+            </a>
+            <a href="{{ url_for('transactions', account_id=acc.account_id) }}" class="btn btn-sm btn-outline-secondary flex-grow-1 py-2">
+                <i class="bi bi-receipt me-1"></i> History
+            </a>
+            <form action="{{ url_for('toggle_account_status', account_id=acc.account_id) }}" method="POST" class="m-0">
+                {% if acc.status == 'Frozen' %}
+                <button type="submit" class="btn btn-sm btn-outline-success py-2" title="Unfreeze this account">
+                    <i class="bi bi-unlock-fill"></i> Unfreeze
+                </button>
+                {% else %}
+                <button type="submit" class="btn btn-sm btn-outline-warning py-2 text-dark" title="Freeze this account (prevents outgoing transfers)">
+                    <i class="bi bi-snow2"></i> Freeze
+                </button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal: Open New Account -->
+<div class="modal fade" id="newAccountModal" tabindex="-1" aria-labelledby="newAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="newAccountModalLabel">Open New Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('create_account') }}" method="POST">
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small text-uppercase">Account Type</label>
+                        <select name="account_type" class="form-select form-select-lg" required>
+                            <option value="Savings">Savings Account</option>
+                            <option value="Current">Current Account</option>
+                            <option value="Wallet">Digital Wallet</option>
+                            <option value="Credit">Credit Line / Card</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small text-uppercase">Initial Opening Deposit (₹)</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light text-muted fw-bold">₹</span>
+                            <input type="number" step="0.01" min="0" name="initial_balance" class="form-control" value="0.00" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4">Open Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

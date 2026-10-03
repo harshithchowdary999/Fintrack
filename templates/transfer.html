@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Transfer & Payments{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-4">
+    <div class="col-md-8">
+        <h3 class="fw-bold mb-1">Send Money & Pay Vendors</h3>
+        <p class="text-muted mb-0">Move money between your accounts or make immediate payments to external vendors and merchants.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Transfer Form (Left Column) -->
+    <div class="col-lg-7">
+        <div class="card card-custom p-4">
+            <!-- Nav Tabs: Between Accounts vs Pay Vendor -->
+            <ul class="nav nav-pills mb-4 nav-fill p-1 bg-light rounded-3" id="transferTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold py-2" id="internal-tab" data-bs-toggle="pill" data-bs-target="#internal-pane" type="button" role="tab">
+                        <i class="bi bi-arrow-left-right me-1"></i> Between My Accounts
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold py-2" id="vendor-tab" data-bs-toggle="pill" data-bs-target="#vendor-pane" type="button" role="tab">
+                        <i class="bi bi-shop me-1"></i> Pay External Vendor / Payee
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="transferTabContent">
+                <!-- Tab 1: Between My Accounts -->
+                <div class="tab-pane fade show active" id="internal-pane" role="tabpanel">
+                    <form action="{{ url_for('transfer') }}" method="POST">
+                        <input type="hidden" name="transfer_type" value="internal">
+
+                        <!-- Source Account -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Transfer From</label>
+                            <div class="p-3 bg-light rounded-3 border">
+                                <select name="from_account" id="fromAccountSelect" class="form-select border-0 bg-transparent fw-bold fs-6" required onchange="updateMaxAmount()">
+                                    {% for acc in accounts %}
+                                    <option value="{{ acc.account_id }}" data-balance="{{ acc.balance }}">
+                                        {{ acc.account_type }} Account (A/C #{{ acc.account_id }}) &bull; Available: ₹{{ "{:,.2f}".format(acc.balance) }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Swap Indicator -->
+                        <div class="text-center my-n2 position-relative" style="z-index: 2;">
+                            <span class="d-inline-flex align-items-center justify-content-center bg-white border rounded-circle shadow-sm" style="width: 36px; height: 36px;">
+                                <i class="bi bi-arrow-down-up text-primary"></i>
+                            </span>
+                        </div>
+
+                        <!-- Destination Account -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Transfer To</label>
+                            <div class="p-3 bg-light rounded-3 border">
+                                <select name="to_account" class="form-select border-0 bg-transparent fw-bold fs-6" required>
+                                    {% for acc in accounts %}
+                                    <option value="{{ acc.account_id }}" {% if loop.index == 2 %}selected{% endif %}>
+                                        {{ acc.account_type }} Account (A/C #{{ acc.account_id }}) &bull; Current: ₹{{ "{:,.2f}".format(acc.balance) }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Amount -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold text-muted small text-uppercase mb-0">Transfer Amount</label>
+                                <span class="text-muted small" id="availableText"></span>
+                            </div>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light border-end-0 fw-bold text-muted">₹</span>
+                                <input type="number" step="0.01" min="1" name="amount" id="transferAmount" class="form-control border-start-0 fw-bold fs-4" placeholder="0.00" required>
+                            </div>
+                            <!-- Preset Buttons -->
+                            <div class="d-flex gap-2 mt-2 flex-wrap">
+                                <button type="button" class="preset-btn" onclick="setPreset(500)">+ ₹500</button>
+                                <button type="button" class="preset-btn" onclick="setPreset(1000)">+ ₹1,000</button>
+                                <button type="button" class="preset-btn" onclick="setPreset(5000)">+ ₹5,000</button>
+                                <button type="button" class="preset-btn" onclick="setPreset(10000)">+ ₹10,000</button>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Description</label>
+                            <input type="text" name="description" class="form-control" placeholder="Inter-account transfer" value="Inter-account transfer">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-3 fs-6 fw-bold">
+                            <i class="bi bi-send-fill me-2"></i> Confirm & Transfer
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Tab 2: Pay External Vendor / Payee -->
+                <div class="tab-pane fade" id="vendor-pane" role="tabpanel">
+                    <form action="{{ url_for('transfer') }}" method="POST">
+                        <input type="hidden" name="transfer_type" value="vendor">
+
+                        <!-- Pay From Account -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Pay From Account</label>
+                            <select name="from_account" class="form-select" required>
+                                {% for acc in accounts %}
+                                <option value="{{ acc.account_id }}">
+                                    {{ acc.account_type }} Account (A/C #{{ acc.account_id }}) &bull; Balance: ₹{{ "{:,.2f}".format(acc.balance) }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Vendor / Payee Name -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Vendor / Merchant / Payee Name</label>
+                            <input type="text" name="vendor_name" id="vendorPayName" class="form-control" placeholder="e.g. Amazon, Swiggy, Landlord Ramesh, Airtel" required>
+                            <div class="d-flex gap-1 mt-1 flex-wrap">
+                                <span class="badge bg-light text-dark border pointer" role="button" onclick="setVendorPay('Amazon India')">Amazon</span>
+                                <span class="badge bg-light text-dark border pointer" role="button" onclick="setVendorPay('Swiggy')">Swiggy</span>
+                                <span class="badge bg-light text-dark border pointer" role="button" onclick="setVendorPay('Landlord')">Landlord</span>
+                                <span class="badge bg-light text-dark border pointer" role="button" onclick="setVendorPay('Electricity Board')">Electricity</span>
+                                <span class="badge bg-light text-dark border pointer" role="button" onclick="setVendorPay('Airtel Broadband')">Airtel</span>
+                            </div>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Spending Category</label>
+                            <select name="category_id" id="vendorCategorySelect" class="form-select" required>
+                                {% for cat in categories %}
+                                <option value="{{ cat.category_id }}">{{ cat.category_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Amount -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Payment Amount (₹)</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light text-muted fw-bold">₹</span>
+                                <input type="number" step="0.01" min="1" name="amount" id="vendorAmount" class="form-control" placeholder="0.00" required>
+                            </div>
+                            <div class="d-flex gap-2 mt-2 flex-wrap">
+                                <button type="button" class="preset-btn" onclick="setVendorPreset(500)">+ ₹500</button>
+                                <button type="button" class="preset-btn" onclick="setVendorPreset(1000)">+ ₹1,000</button>
+                                <button type="button" class="preset-btn" onclick="setVendorPreset(5000)">+ ₹5,000</button>
+                                <button type="button" class="preset-btn" onclick="setVendorPreset(20000)">+ ₹20,000</button>
+                            </div>
+                        </div>
+
+                        <!-- Transaction Date (Target Month) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Payment Date / Billing Cycle</label>
+                            <input type="date" name="txn_date" id="vendorDateInput" class="form-control" required>
+                            <div class="form-text">Logged into this specific month's budget cycle.</div>
+                        </div>
+
+                        <!-- Note -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Note / Memo</label>
+                            <input type="text" name="description" class="form-control" placeholder="e.g. Monthly rent, Electronics purchase">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-3 fs-6 fw-bold">
+                            <i class="bi bi-credit-card-2-front-fill me-2"></i> Pay Vendor Now
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Security Footer -->
+            <div class="text-center mt-3 text-muted small d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-shield-check text-success fs-5"></i>
+                <span>Bank-grade 256-bit security &bull; Real-time budget update</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Account Balances & Frequent Payees -->
+    <div class="col-lg-5">
+        <!-- Frequent Payees / 1-Click Quick Pay Card -->
+        <div class="card card-custom p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Frequent Payees
+                </h5>
+                <span class="badge bg-light text-muted border">1-Click Quick Pay</span>
+            </div>
+            {% if frequent_payees %}
+            <div class="d-flex flex-column gap-2">
+                {% for p in frequent_payees %}
+                <div class="d-flex justify-content-between align-items-center p-3 rounded-3 bg-light border hover-shadow transition">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="category-avatar" style="background: #e0e7ff; color: #4f46e5; width: 40px; height: 40px; font-size: 1rem;">
+                            <i class="bi bi-shop"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">{{ p.vendor }}</div>
+                            <div class="small text-muted">
+                                <span class="badge-soft-primary" style="font-size: 0.72rem;">{{ p.category_name }}</span>
+                                &bull; {{ p.payment_count }} payment(s)
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="quickPayVendor('{{ p.vendor }}', {{ p.category_id }}, {{ p.last_amount or 0 }})">
+                        <i class="bi bi-arrow-right-circle me-1"></i> Pay
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted small">
+                <i class="bi bi-people fs-2 text-muted mb-2 d-block"></i>
+                No frequent payees yet. Complete a vendor payment to populate this list!
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Account Balances Card -->
+        <div class="card card-custom p-4 mb-4">
+            <h5 class="fw-bold mb-3">Your Account Balances</h5>
+            <div class="d-flex flex-column gap-3">
+                {% for acc in accounts %}
+                <div class="d-flex justify-content-between align-items-center p-3 rounded-3 bg-light border">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 bg-primary bg-opacity-10 text-primary rounded-3">
+                            <i class="bi bi-bank2 fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">{{ acc.account_type }}</div>
+                            <div class="small text-muted">A/C #{{ acc.account_id }}</div>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold fs-6">₹{{ "{:,.2f}".format(acc.balance) }}</div>
+                        {% if acc.status == 'Frozen' %}
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger">Frozen</span>
+                        {% else %}
+                        <span class="badge-soft-success">Active</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function setPreset(amount) {
+        document.getElementById('transferAmount').value = amount;
+    }
+
+    function setVendorPreset(amount) {
+        document.getElementById('vendorAmount').value = amount;
+    }
+
+    function setVendorPay(name) {
+        document.getElementById('vendorPayName').value = name;
+    }
+
+    function quickPayVendor(vendor, categoryId, suggestedAmount) {
+        const vendorTabBtn = document.querySelector('#vendor-tab');
+        if (vendorTabBtn) {
+            const tab = new bootstrap.Tab(vendorTabBtn);
+            tab.show();
+        }
+        document.getElementById('vendorPayName').value = vendor;
+        const catSelect = document.getElementById('vendorCategorySelect');
+        if (catSelect && categoryId) {
+            catSelect.value = categoryId;
+        }
+        if (suggestedAmount && suggestedAmount > 0) {
+            document.getElementById('vendorAmount').value = suggestedAmount;
+        }
+        document.getElementById('vendorAmount').focus();
+    }
+
+    function updateMaxAmount() {
+        const sel = document.getElementById('fromAccountSelect');
+        const opt = sel.options[sel.selectedIndex];
+        const bal = parseFloat(opt.getAttribute('data-balance') || 0);
+        document.getElementById('availableText').textContent = 'Max available: ₹' + bal.toLocaleString();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updateMaxAmount();
+        const today = new Date().toISOString().split('T')[0];
+        const vDate = document.getElementById('vendorDateInput');
+        if (vDate) vDate.value = today;
+    });
+</script>
+{% endblock %}

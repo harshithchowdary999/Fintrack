@@ -1,0 +1,83 @@
+{% extends "auth_base.html" %}
+
+{% block title %}Sign In{% endblock %}
+
+{% block content %}
+<div class="card card-custom p-4 p-md-5 shadow-sm border-0">
+    <div class="text-center mb-4">
+        <div class="navbar-brand-icon mx-auto mb-3" style="width: 52px; height: 52px; font-size: 1.5rem;">
+            <i class="bi bi-wallet2"></i>
+        </div>
+        <h4 class="fw-bold mb-1">Welcome to FinTrack</h4>
+        <p class="text-muted small">Personal Finance & Spending Intelligence</p>
+    </div>
+
+    {% if session.get('user_name') %}
+    <div class="card bg-light border p-3 mb-4 rounded-3 text-center">
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-2 flex-wrap">
+            <i class="bi bi-person-check-fill text-primary"></i>
+            <span class="text-muted small">Active Session:</span>
+            <strong class="text-dark small">{{ session.get('user_name') }}</strong>
+            <span class="badge bg-primary bg-opacity-10 text-primary small text-uppercase">{{ session.get('user_role') }}</span>
+        </div>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+            <a href="{{ url_for('dashboard' if session.get('user_role') != 'ADMIN' else 'admin_portal') }}" class="btn btn-sm btn-primary px-3 py-1 fw-semibold">
+                <i class="bi bi-speedometer2 me-1"></i> Open Dashboard
+            </a>
+            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-secondary px-3 py-1 fw-semibold">
+                <i class="bi bi-box-arrow-right me-1"></i> Sign Out
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <form action="{{ url_for('login') }}" method="POST">
+        <div class="mb-3">
+            <label class="form-label fw-bold small text-muted text-uppercase">Email Address</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-envelope"></i></span>
+                <input type="email" name="email" class="form-control border-start-0" placeholder="harshith@example.com" value="harshith@example.com" required autofocus>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-muted text-uppercase">Password</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-lock"></i></span>
+                <input type="password" name="password" class="form-control border-start-0" placeholder="pass123" value="pass123" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold">
+            Sign In
+        </button>
+    </form>
+
+    <div class="bg-light rounded-3 p-3 mt-4 small text-muted border">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-dark">Quick Demo Logins:</span>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1 fw-medium" onclick="fillLogin('harshith@example.com', 'pass123')">
+                <i class="bi bi-person me-1"></i> User Account
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-dark flex-grow-1 fw-medium" onclick="fillLogin('admin@fintrack.com', 'admin123')">
+                <i class="bi bi-shield-lock me-1"></i> Admin Console
+            </button>
+        </div>
+    </div>
+
+    <div class="text-center mt-4 small">
+        Don't have an account? <a href="{{ url_for('register') }}" class="text-decoration-none fw-bold text-primary">Create one</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function fillLogin(email, pass) {
+        document.querySelector('input[name="email"]').value = email;
+        document.querySelector('input[name="password"]').value = pass;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,427 @@
+{% extends "admin_base.html" %}
+
+{% block title %}System Administration{% endblock %}
+
+{% block content %}
+<!-- Section: Header Banner -->
+<div id="overview" class="row align-items-center mb-4">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h3 class="fw-bold mb-0">System Administration</h3>
+            <span class="badge bg-primary text-white text-uppercase px-2 py-1 small">Enterprise Level</span>
+        </div>
+        <p class="text-muted mb-0">Oracle 19c user account governance, role-based access control, and zero-knowledge privacy enforcement.</p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <button class="btn btn-primary shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            <i class="bi bi-person-plus-fill me-1"></i> Add User / Admin
+        </button>
+    </div>
+</div>
+
+<!-- Section: System Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+            <div class="stat-value text-dark">{{ stats.total_users }}</div>
+            <div class="small text-muted mt-2">Registered platform profiles</div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Total Bank Accounts</div>
+                <div class="stat-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-bank2"></i>
+                </div>
+            </div>
+            <div class="stat-value text-dark">{{ stats.total_accounts }}</div>
+            <div class="small text-muted mt-2">Managed deposit accounts</div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Transactions Processed</div>
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-receipt"></i>
+                </div>
+            </div>
+            <div class="stat-value text-dark">{{ stats.total_txns }}</div>
+            <div class="small text-muted mt-2">Ledger entries logged</div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Database Health</div>
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-database-check"></i>
+                </div>
+            </div>
+            <div class="stat-value text-success">ONLINE</div>
+            <div class="small text-muted mt-2">ORCLPDB &bull; Active Pool</div>
+        </div>
+    </div>
+</div>
+
+<!-- Section: Privacy-Protected User Directory & Governance -->
+<div id="user-directory" class="card card-custom p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+            <h5 class="fw-bold mb-1">User Directory & Role Governance</h5>
+            <span class="small text-muted">Manage platform accounts, assign administrator roles, and provision credentials</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <i class="bi bi-person-plus-fill me-1"></i> Add User / Admin
+            </button>
+            <span class="badge bg-light text-dark border">
+                <i class="bi bi-shield-lock-fill text-success me-1"></i> Data Privacy Protocol Active
+            </span>
+        </div>
+    </div>
+
+    <!-- Privacy Disclaimer Banner -->
+    <div class="alert alert-light border d-flex align-items-center gap-3 p-3 rounded-3 mb-3 small text-muted">
+        <i class="bi bi-shield-check fs-4 text-primary flex-shrink-0"></i>
+        <div>
+            <strong>Strict Financial Privacy Guarantee:</strong> In accordance with banking secrecy laws and data protection standards, administrators have zero visibility into user monetary balances. Personal Identifiable Information (PII) including emails and names are masked, and credentials remain encrypted.
+        </div>
+    </div>
+
+    <!-- Quick Search & Role Filter Bar -->
+    <div class="row g-2 mb-3 align-items-center">
+        <div class="col-md-5">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="userSearchInput" class="form-control border-start-0" placeholder="Filter by User ID, Name, or Email...">
+            </div>
+        </div>
+        <div class="col-md-7 text-md-end">
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary active filter-btn" data-role="all">All Accounts ({{ users|length }})</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-role="USER">Standard Users</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-role="ADMIN">Administrators</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-modern align-middle" id="userDirectoryTable">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Linked Accounts</th>
+                    <th>Financial Privacy</th>
+                    <th>Joined</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr class="user-row" data-role="{{ u.role }}">
+                    <td class="text-muted font-monospace small user-id-cell">#USR-{{ "%04d"|format(u.user_id) }}</td>
+                    <td class="fw-bold text-dark user-name-cell">
+                        {{ u.display_name }}
+                        {% if u.is_self %}
+                        <span class="badge bg-primary text-white ms-1" style="font-size: 0.68rem;">You</span>
+                        {% elif u.is_masked %}
+                        <span class="badge bg-light text-muted border ms-1" style="font-size: 0.68rem;">Masked</span>
+                        {% endif %}
+                    </td>
+                    <td class="font-monospace small text-muted user-email-cell">{{ u.display_email }}</td>
+                    <td>
+                        {% if u.role == 'ADMIN' %}
+                        <span class="badge bg-dark text-white"><i class="bi bi-shield-check me-1"></i> ADMIN</span>
+                        {% else %}
+                        <span class="badge-soft-primary"><i class="bi bi-person me-1"></i> USER</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="fw-semibold">{{ u.account_count }} account(s)</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-secondary border">
+                            <i class="bi bi-eye-slash-fill text-success me-1"></i> Balance Redacted
+                        </span>
+                    </td>
+                    <td class="text-muted small">{{ u.join_date }}</td>
+                    <td class="text-end">
+                        {% if u.is_self %}
+                        <span class="badge bg-light text-muted border py-1 px-2">
+                            <i class="bi bi-lock-fill text-muted me-1"></i> Current Admin
+                        </span>
+                        {% else %}
+                        <div class="d-inline-flex gap-1">
+                            <!-- Toggle Role Form -->
+                            <form action="{{ url_for('admin_toggle_role', target_user_id=u.user_id) }}" method="POST" class="d-inline"
+                                  onsubmit="return confirm('Change role for user #USR-{{ "%04d"|format(u.user_id) }} to {{ 'USER' if u.role == 'ADMIN' else 'ADMIN' }}?');">
+                                {% if u.role == 'USER' %}
+                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Promote to Administrator">
+                                    <i class="bi bi-shield-plus me-1"></i> Make Admin
+                                </button>
+                                {% else %}
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Demote to Standard User">
+                                    <i class="bi bi-arrow-down-circle me-1"></i> Demote
+                                </button>
+                                {% endif %}
+                            </form>
+
+                            <!-- Delete User Button triggering confirmation modal -->
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ u.user_id }}" title="Delete User">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Section: System Trigger & Audit Events -->
+<div id="system-audit" class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card card-custom h-100 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold mb-0">System Trigger & Audit Events</h5>
+                    <span class="small text-muted">Automated database alerts generated by Oracle 19c Compound Triggers</span>
+                </div>
+                <span class="badge bg-warning text-dark">Live Event Log</span>
+            </div>
+            {% if system_alerts %}
+            <div class="d-flex flex-column gap-2">
+                {% for a in system_alerts %}
+                <div class="p-3 rounded-3 bg-light border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="badge bg-warning text-dark font-monospace">{{ a.alert_type }}</span>
+                        <span class="small text-muted font-monospace">{{ a.alert_time }}</span>
+                    </div>
+                    <div class="small fw-semibold text-dark">{{ a.message }}</div>
+                    <div class="small text-muted mt-1">Affected Target Ref: <span class="font-monospace fw-semibold">#USR-{{ "%04d"|format(a.user_id) }}</span></div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-shield-check fs-1 text-success"></i>
+                <p class="mt-2 mb-0">No budget threshold overrun or security warning events logged.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Governance & Security Policy Card -->
+    <div class="col-lg-4">
+        <div class="card card-custom h-100 p-4">
+            <h5 class="fw-bold mb-3">Governance Controls</h5>
+            
+            <div class="d-flex flex-column gap-3">
+                <div class="p-3 rounded-3 bg-light border">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="bi bi-shield-lock-fill text-primary fs-5"></i>
+                        <span class="fw-bold text-dark">Role-Based Access (RBAC)</span>
+                    </div>
+                    <div class="small text-muted">
+                        Administrators have platform governance privileges. Standard users have dedicated banking and ledger functions.
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="bi bi-database-fill-check text-success fs-5"></i>
+                        <span class="fw-bold text-dark">Relational Cascade Deletes</span>
+                    </div>
+                    <div class="small text-muted">
+                        Removing a user account enforces Oracle <code>ON DELETE CASCADE</code> across linked accounts, transactions, and budgets.
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="bi bi-key-fill text-warning fs-5"></i>
+                        <span class="fw-bold text-dark">Self-Demotion Guard</span>
+                    </div>
+                    <div class="small text-muted">
+                        Active administrators cannot delete or demote their own account, preventing administrative lockout.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Add User / Admin -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <form action="{{ url_for('admin_create_user') }}" method="POST">
+                <div class="modal-header border-bottom px-4 pt-4 pb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="stat-icon bg-primary bg-opacity-10 text-primary" style="width: 38px; height: 38px; font-size: 1.1rem;">
+                            <i class="bi bi-person-plus-fill"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0" id="addUserModalLabel">Create User or Administrator</h5>
+                            <span class="small text-muted">Provision a new account on Oracle 19c</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Full Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                            <input type="text" name="name" class="form-control" placeholder="e.g. Rahul Sharma" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-envelope"></i></span>
+                            <input type="email" name="email" class="form-control" placeholder="e.g. rahul@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Initial Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
+                            <input type="password" name="password" class="form-control" placeholder="Minimum 6 characters" minlength="6" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Account Role</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-shield-check"></i></span>
+                            <select name="role" class="form-select" required>
+                                <option value="USER" selected>Standard User (Consumer Banking with Default Savings A/C)</option>
+                                <option value="ADMIN">System Administrator (Full Console Access & Governance)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-3 bg-light border small text-muted">
+                        <i class="bi bi-info-circle text-primary me-1"></i>
+                        <strong>Automatic Provisioning:</strong> Standard Users will automatically receive a primary <strong>Savings Account</strong> with 0.00 initial balance. Passwords are encrypted using Bcrypt prior to Oracle storage.
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-semibold">
+                        <i class="bi bi-check-lg me-1"></i> Create Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODALS: Confirm Delete User (For each non-self user) -->
+{% for u in users %}
+{% if not u.is_self %}
+<div class="modal fade" id="deleteUserModal{{ u.user_id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom px-4 pt-4 pb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="stat-icon bg-danger bg-opacity-10 text-danger" style="width: 38px; height: 38px; font-size: 1.1rem;">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0 text-danger">Permanently Delete User</h5>
+                        <span class="small text-muted font-monospace">#USR-{{ "%04d"|format(u.user_id) }}</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <p class="mb-3">
+                    Are you sure you want to permanently delete user <strong class="text-dark">{{ u.display_name }}</strong> (<code>{{ u.display_email }}</code>)?
+                </p>
+                <div class="alert alert-danger d-flex align-items-start gap-2 mb-0 small">
+                    <i class="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0 mt-1"></i>
+                    <div>
+                        <strong>Relational Cascade Warning:</strong> In Oracle 19c, this action will execute <code>DELETE CASCADE</code>, permanently erasing all <strong>{{ u.account_count }} linked account(s)</strong>, all transaction histories, recurring subscriptions, budgets, and alert records. <strong>This action cannot be undone.</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top px-4 py-3">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('admin_delete_user', target_user_id=u.user_id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger fw-semibold">
+                        <i class="bi bi-trash3-fill me-1"></i> Permanently Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('userSearchInput');
+    const tableRows = document.querySelectorAll('#userDirectoryTable tbody tr.user-row');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    let currentRoleFilter = 'all';
+
+    function filterTable() {
+        const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+        tableRows.forEach(row => {
+            const role = row.getAttribute('data-role');
+            const idText = row.querySelector('.user-id-cell')?.textContent.toLowerCase() || '';
+            const nameText = row.querySelector('.user-name-cell')?.textContent.toLowerCase() || '';
+            const emailText = row.querySelector('.user-email-cell')?.textContent.toLowerCase() || '';
+
+            const matchesQuery = !query || idText.includes(query) || nameText.includes(query) || emailText.includes(query);
+            const matchesRole = (currentRoleFilter === 'all') || (role === currentRoleFilter);
+
+            if (matchesQuery && matchesRole) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', filterTable);
+    }
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentRoleFilter = this.getAttribute('data-role');
+            filterTable();
+        });
+    });
+});
+</script>
+{% endblock %}
