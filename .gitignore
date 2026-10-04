@@ -25,3 +25,4 @@ Desktop.ini
 # Temporary logs
 *.log
 scratch/
+cloudflared.exe

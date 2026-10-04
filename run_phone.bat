@@ -1,25 +1,33 @@
 @echo off
 title FinTrack Launcher
+cd /d "%~dp0"
+
 echo ========================================================
 echo        FinTrack - Personal Finance Management
 echo ========================================================
 echo.
-echo 1. Starting Flask Server on port 5000...
-start "FinTrack Flask Server" cmd /k "cd /d %~dp0 && python app.py"
+echo [1/2] Starting Flask Server...
+start "FinTrack Flask Server" cmd /k "cd /d "%~dp0" && python app.py"
 
-echo Waiting 3 seconds for server initialization...
-timeout /t 3 /nobreak >nul
+echo Waiting for Flask to initialize...
+ping 127.0.0.1 -n 3 >nul
 
-echo 2. Starting Cloudflare Tunnel for Phone Access...
-start "FinTrack Cloudflare Tunnel" cmd /k "%LOCALAPPDATA%\Programs\Cloudflare\cloudflared.exe tunnel --url http://127.0.0.1:5000"
+echo [2/2] Starting Cloudflare Tunnel...
+start "FinTrack Cloudflare Tunnel" cmd /k "cd /d "%~dp0" && cloudflared.exe tunnel --url http://127.0.0.1:5000"
 
 echo.
 echo ========================================================
-echo  Both services are now running!
+echo  SUCCESS: Both services are running!
+echo.
+echo  Option A (Any Network / 4G / 5G):
 echo  - Look at the "FinTrack Cloudflare Tunnel" window.
-echo  - Copy the https://xxxx.trycloudflare.com link and open
-echo    it in your phone browser!
-echo  - To stop, close both command windows.
+echo  - Copy the https://xxxx.trycloudflare.com link.
+echo.
+echo  Option B (Same Wi-Fi / Hotspot - Never Changes):
+echo  - Open on phone: http://172.29.19.140:5000
+echo.
+echo  (Leave both windows open while using the app.)
+echo  (To stop everything, simply close the windows.)
 echo ========================================================
 echo.
 pause
