@@ -519,6 +519,25 @@ def dashboard():
         {'usr_id': user['id']}
     )
 
+    # User profile salary for deficit checks
+    user_info = db.query_one(
+        "SELECT NVL(monthly_salary, 0) AS monthly_salary FROM Users WHERE user_id = :usr_id",
+        {'usr_id': user['id']}
+    )
+    monthly_salary = float(user_info['monthly_salary']) if user_info and user_info.get('monthly_salary') else 0.0
+    total_budget_limits = sum(float(b.get('limit_amount', 0) or 0) for b in budgets)
+    
+    # Check if spending or budget commitments exceed salary
+    is_salary_deficit = False
+    deficit_amount = 0.0
+    if monthly_salary > 0:
+        if total_budget_limits > monthly_salary:
+            is_salary_deficit = True
+            deficit_amount = total_budget_limits - monthly_salary
+        elif total_expense > monthly_salary:
+            is_salary_deficit = True
+            deficit_amount = total_expense - monthly_salary
+
     return render_template(
         'index.html',
         total_balance=total_balance,
@@ -530,7 +549,11 @@ def dashboard():
         category_spend=category_spend,
         current_month=current_month,
         cycle=cycle,
-        accounts=user_accounts
+        accounts=user_accounts,
+        monthly_salary=monthly_salary,
+        total_budget_limits=total_budget_limits,
+        is_salary_deficit=is_salary_deficit,
+        deficit_amount=deficit_amount
     )
 
 @app.route('/accounts')

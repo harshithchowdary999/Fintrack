@@ -52,6 +52,33 @@
 </div>
 {% endif %}
 
+{% if is_salary_deficit and deficit_amount > 0 %}
+<!-- Salary Deficit & Downscaling Guardrail Banner -->
+<div class="card p-3 p-md-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%); border-left: 4px solid #ef4444 !important;">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-danger bg-opacity-10 text-danger fs-3 p-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-danger text-white text-uppercase px-2 py-0.5 small">Deficit Alert</span>
+                    <h5 class="fw-bold text-danger mb-0">Budget / Spending Exceeds Monthly Salary</h5>
+                </div>
+                <p class="text-muted small mb-0">
+                    Your monthly salary is <strong>₹{{ "{:,.2f}".format(monthly_salary) }}</strong>, but your committed spending limits are <strong>₹{{ "{:,.2f}".format(total_budget_limits) }}</strong> (Deficit: <span class="text-danger fw-bold">₹{{ "{:,.2f}".format(deficit_amount) }}</span>). Downscale non-essential categories to keep your finances balanced.
+                </p>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('setup') }}" class="btn btn-danger px-4 py-2 fw-semibold shadow-sm">
+                <i class="bi bi-sliders me-1"></i> Rebalance & Downscale Budgets
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Monthly Financial Cycle & Burn Rate Tracker -->
 <div class="card card-custom p-3 p-md-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-left: 4px solid #4f46e5 !important;">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">

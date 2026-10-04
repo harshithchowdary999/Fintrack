@@ -97,10 +97,32 @@
                     <!-- Preset Allocation Buttons -->
                     <div class="d-flex gap-2 flex-wrap">
                         <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyPreset('50-30-20')">
-                            <i class="bi bi-magic me-1"></i> 50/30/20 Rule
+                            <i class="bi bi-magic me-1"></i> 50/30/20 Standard
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-semibold" onclick="applyPreset('70-20-10')">
+                            <i class="bi bi-lightning-charge-fill text-warning me-1"></i> 70/20/10 Lean Cut
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger fw-semibold" onclick="applyPreset('80-20')">
+                            <i class="bi bi-shield-shaded text-danger me-1"></i> 80/20 Survival Mode
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-success" onclick="applyPreset('conservative')">
                             <i class="bi bi-shield-check me-1"></i> Conservative (40% Save)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Deficit Alert Banner (Auto-Triggered when Budgets > Salary) -->
+                <div id="deficitAlertCard" class="alert alert-danger border-danger border-2 p-3 mb-3 d-none rounded-3 shadow-sm">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-triangle-fill fs-4 text-danger"></i>
+                            <div>
+                                <h6 class="fw-bold mb-0 text-danger">⚠️ Budget Deficit Detected: Spending Limits Exceed Salary</h6>
+                                <p class="small mb-0 text-dark" id="deficitAlertText">Your planned budgets exceed your monthly income. Downscale your discretionary spending to protect your finances.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-danger fw-bold shadow-sm" onclick="autoDownscaleBudgets()">
+                            <i class="bi bi-magic me-1"></i> Auto-Scale Down to Match Salary
                         </button>
                     </div>
                 </div>
@@ -116,7 +138,7 @@
                         <div class="fw-bold fs-6 text-primary" id="displayTotalBudgets">₹46,000.00</div>
                     </div>
                     <div class="col-4 text-center">
-                        <div class="small text-muted text-uppercase" style="font-size: 0.72rem;">Projected Savings</div>
+                        <div class="small text-muted text-uppercase" style="font-size: 0.72rem;">Projected Savings / Buffer</div>
                         <div class="fw-bold fs-6 text-success" id="displaySurplus">₹14,000.00 (23.3%)</div>
                     </div>
                 </div>
@@ -126,6 +148,7 @@
                     {% for cat in categories %}
                     {% set cat_id_str = cat.category_id|string %}
                     {% set existing_val = existing_budget_map.get(cat.category_id, 0.0) %}
+                    {% set is_essential = cat.category_name in ['Rent & Housing', 'Groceries', 'Utilities', 'Healthcare', 'Transportation'] %}
                     <div class="col-md-6 col-lg-4">
                         <div class="p-3 rounded-3 border bg-white h-100 d-flex flex-column justify-content-between">
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -143,9 +166,16 @@
                                     {% endif %}
                                     {{ cat.category_name }}
                                 </span>
-                                <span class="badge bg-light text-muted small category-pct" data-cat-id="{{ cat.category_id }}" style="font-size: 0.7rem;">
-                                    0%
-                                </span>
+                                <div class="d-flex align-items-center gap-1">
+                                    {% if is_essential %}
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.65rem;" title="Essential Fixed Expense">Need</span>
+                                    {% else %}
+                                    <span class="badge bg-warning bg-opacity-10 text-dark" style="font-size: 0.65rem;" title="Discretionary Flexible Expense">Want</span>
+                                    {% endif %}
+                                    <span class="badge bg-light text-muted small category-pct" data-cat-id="{{ cat.category_id }}" style="font-size: 0.7rem;">
+                                        0%
+                                    </span>
+                                </div>
                             </div>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted">₹</span>
@@ -154,6 +184,7 @@
                                        id="cat_{{ cat.category_id }}" 
                                        class="form-control budget-field" 
                                        data-cat-name="{{ cat.category_name }}"
+                                       data-essential="{{ 'true' if is_essential else 'false' }}"
                                        value="{{ existing_val if existing_val > 0 else 0 }}" 
                                        oninput="recalculateTotals()">
                             </div>
@@ -199,6 +230,30 @@
             'Subscriptions': 0.03,
             'Healthcare': 0.04
         },
+        '70-20-10': {
+            // Lean / Austerity Cut preset: Protects essentials, scales down wants
+            'Rent & Housing': 0.35,
+            'Groceries': 0.18,
+            'Utilities': 0.07,
+            'Transportation': 0.05,
+            'Healthcare': 0.05,
+            'Food & Dining': 0.08,
+            'Shopping': 0.05,
+            'Entertainment': 0.04,
+            'Subscriptions': 0.03
+        },
+        '80-20': {
+            // Survival / Emergency Cut preset: Zero non-essentials, maximum protection
+            'Rent & Housing': 0.40,
+            'Groceries': 0.22,
+            'Utilities': 0.08,
+            'Healthcare': 0.05,
+            'Transportation': 0.05,
+            'Food & Dining': 0.00,
+            'Entertainment': 0.00,
+            'Shopping': 0.00,
+            'Subscriptions': 0.00
+        },
         'conservative': {
             'Rent & Housing': 0.22,
             'Groceries': 0.12,
@@ -237,6 +292,59 @@
         recalculateTotals();
     }
 
+    // Auto-scale down budgets when salary decreases or deficit occurs
+    function autoDownscaleBudgets() {
+        const salary = parseFloat(document.getElementById('salaryInput').value) || 0;
+        if (salary <= 0) return;
+
+        // Target total budgets to 85% of salary, reserving 15% minimum buffer
+        const targetBudgetTotal = salary * 0.85;
+        
+        // Sum current essentials vs discretionary
+        let essentialTotal = 0;
+        let discretionaryTotal = 0;
+        const inputs = document.querySelectorAll('.budget-field');
+        
+        inputs.forEach(input => {
+            const val = parseFloat(input.value) || 0;
+            if (input.dataset.essential === 'true') {
+                essentialTotal += val;
+            } else {
+                discretionaryTotal += val;
+            }
+        });
+
+        const currentTotal = essentialTotal + discretionaryTotal;
+        if (currentTotal <= targetBudgetTotal) {
+            recalculateTotals();
+            return;
+        }
+
+        // If salary is cut severely, apply 70/20/10 lean mode
+        if (essentialTotal > targetBudgetTotal) {
+            applyPreset('70-20-10');
+            return;
+        }
+
+        // Cut discretionary spending first to absorb the salary drop
+        const remainingForDiscretionary = Math.max(0, targetBudgetTotal - essentialTotal);
+        const discretionaryScaleFactor = discretionaryTotal > 0 ? (remainingForDiscretionary / discretionaryTotal) : 0;
+
+        inputs.forEach(input => {
+            const val = parseFloat(input.value) || 0;
+            if (input.dataset.essential === 'true') {
+                // Keep essentials intact or scale minimally
+                input.value = Math.round(val / 100) * 100;
+            } else {
+                // Trim wants proportionally
+                const scaled = Math.round((val * discretionaryScaleFactor) / 100) * 100;
+                input.value = Math.max(0, scaled);
+            }
+        });
+
+        recalculateTotals();
+    }
+
     function recalculateTotals() {
         const salary = parseFloat(document.getElementById('salaryInput').value) || 0;
         let totalBudgets = 0;
@@ -260,12 +368,20 @@
         document.getElementById('displayTotalBudgets').innerText = `₹${totalBudgets.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
         const surplusEl = document.getElementById('displaySurplus');
+        const deficitAlertCard = document.getElementById('deficitAlertCard');
+        const deficitAlertText = document.getElementById('deficitAlertText');
+
         if (surplus >= 0) {
             surplusEl.className = 'fw-bold fs-6 text-success';
-            surplusEl.innerText = `₹${surplus.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${surplusPct}%)`;
+            surplusEl.innerText = `₹${surplus.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (+${surplusPct}%)`;
+            if (deficitAlertCard) deficitAlertCard.classList.add('d-none');
         } else {
             surplusEl.className = 'fw-bold fs-6 text-danger';
-            surplusEl.innerText = `-₹${Math.abs(surplus).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (Over Budget!)`;
+            surplusEl.innerText = `-₹${Math.abs(surplus).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (Deficit!)`;
+            if (deficitAlertCard) {
+                deficitAlertCard.classList.remove('d-none');
+                deficitAlertText.innerText = `Your total budgets (₹${totalBudgets.toLocaleString('en-IN')}) exceed your monthly salary (₹${salary.toLocaleString('en-IN')}) by ₹${Math.abs(surplus).toLocaleString('en-IN')}. Downscale discretionary wants to balance your budget.`;
+            }
         }
     }
 
