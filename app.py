@@ -352,6 +352,17 @@ def setup():
         "SELECT account_id, account_type, balance, status FROM Accounts WHERE user_id = :usr_id AND status = 'Active' ORDER BY account_id",
         {'usr_id': user['id']}
     )
+    if not user_accounts:
+        # Guarantee default account creation if user has none
+        db.execute_dml(
+            "INSERT INTO Accounts (user_id, account_type, balance, status) VALUES (:usr_id, 'Savings', 0.00, 'Active')",
+            {'usr_id': user['id']}
+        )
+        user_accounts = db.query_all(
+            "SELECT account_id, account_type, balance, status FROM Accounts WHERE user_id = :usr_id AND status = 'Active' ORDER BY account_id",
+            {'usr_id': user['id']}
+        )
+
     categories = db.query_all(
         "SELECT category_id, category_name FROM Categories WHERE type = 'Expense' ORDER BY category_id"
     )
@@ -373,20 +384,24 @@ def setup():
         )
 
         # 2. Deposit salary if requested and valid
-        if deposit_now and salary > 0 and account_id > 0:
-            acc = db.query_one(
-                "SELECT account_id, account_type, status FROM Accounts WHERE account_id = :aid AND user_id = :usr_id",
-                {'aid': account_id, 'usr_id': user['id']}
-            )
-            if acc and acc.get('status') == 'Active':
-                try:
-                    db.execute_dml(
-                        """INSERT INTO Transactions (account_id, category_id, amount, txn_type, txn_date, vendor, description)
-                           VALUES (:1, 1, :2, 'Credit', SYSDATE, :3, 'Monthly Salary Credit')""",
-                        [account_id, salary, employer]
-                    )
-                except Exception as e:
-                    flash(f"Note on salary deposit: {str(e)}", "warning")
+        if deposit_now and salary > 0:
+            if account_id <= 0 and user_accounts:
+                account_id = user_accounts[0]['account_id']
+
+            if account_id > 0:
+                acc = db.query_one(
+                    "SELECT account_id, account_type, status FROM Accounts WHERE account_id = :aid AND user_id = :usr_id",
+                    {'aid': account_id, 'usr_id': user['id']}
+                )
+                if acc and acc.get('status') == 'Active':
+                    try:
+                        db.execute_dml(
+                            """INSERT INTO Transactions (account_id, category_id, amount, txn_type, txn_date, vendor, description)
+                               VALUES (:1, 1, :2, 'Credit', SYSDATE, :3, 'Monthly Salary Credit')""",
+                            [account_id, salary, employer]
+                        )
+                    except Exception as e:
+                        flash(f"Note on salary deposit: {str(e)}", "warning")
 
         # 3. Upsert Category Budgets for the active month using Oracle MERGE
         merge_sql = """

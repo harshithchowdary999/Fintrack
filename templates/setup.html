@@ -59,11 +59,15 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-muted text-uppercase">Deposit into Account</label>
                         <select name="account_id" class="form-select" required>
-                            {% for acc in accounts %}
-                            <option value="{{ acc.account_id }}">
-                                {{ acc.account_type }} Account (Available: ₹{{ "{:,.2f}".format(acc.balance) }})
-                            </option>
-                            {% endfor %}
+                            {% if accounts %}
+                                {% for acc in accounts %}
+                                <option value="{{ acc.account_id }}">
+                                    {{ acc.account_type }} Account (Available: ₹{{ "{:,.2f}".format(acc.balance) }})
+                                </option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="0" selected>Primary Savings Account (Auto-Created)</option>
+                            {% endif %}
                         </select>
                     </div>
 
