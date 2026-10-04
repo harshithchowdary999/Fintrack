@@ -1149,4 +1149,4 @@ def admin_delete_user(target_user_id):
     return redirect(url_for('admin_portal'))
 
 if __name__ == '__main__':
-    app.run(debug=True, use_reloader=False, host='127.0.0.1', port=5000)
+    app.run(debug=True, use_reloader=False, host='0.0.0.0', port=5000)
