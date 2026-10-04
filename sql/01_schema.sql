@@ -22,8 +22,9 @@ CREATE TABLE Users (
     name          VARCHAR2(100) NOT NULL,
     email         VARCHAR2(150) NOT NULL UNIQUE,
     password_hash VARCHAR2(255) NOT NULL,
-    role          VARCHAR2(20) DEFAULT 'USER' NOT NULL,
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    role           VARCHAR2(20) DEFAULT 'USER' NOT NULL,
+    monthly_salary NUMBER(12,2) DEFAULT 0.00 NOT NULL,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_user_role CHECK (role IN ('ADMIN', 'USER'))
 );
 

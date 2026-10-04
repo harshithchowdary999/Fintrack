@@ -217,7 +217,7 @@ def require_login():
     # Restrict ADMIN users from regular consumer banking pages
     if session.get('user_role') == 'ADMIN':
         user_endpoints = [
-            'dashboard', 'accounts', 'create_account', 'toggle_account_status',
+            'dashboard', 'setup', 'accounts', 'create_account', 'toggle_account_status',
             'transactions', 'create_transaction', 'export_transactions',
             'transfer', 
             'budgets', 'set_budget', 
@@ -292,8 +292,8 @@ def register():
         try:
             user_id_var = cursor.var(oracledb.NUMBER)
             cursor.execute(
-                "INSERT INTO Users (name, email, password_hash, role) VALUES (:1, :2, :3, 'USER') RETURNING user_id INTO :4",
-                [name, email, hashed_pw, user_id_var]
+                "INSERT INTO Users (name, email, password_hash, role, monthly_salary) VALUES (:1, :2, :3, 'USER', :4) RETURNING user_id INTO :5",
+                [name, email, hashed_pw, salary_amount, user_id_var]
             )
             new_uid = int(user_id_var.getvalue()[0])
             
@@ -321,12 +321,8 @@ def register():
             session['user_email'] = email
             session['user_role'] = 'USER'
 
-            if salary_amount > 0:
-                flash(f"🎉 Account registered successfully! Initial salary of ₹{salary_amount:,.2f} has been credited to your Savings account.", "success")
-            else:
-                flash("Account registered successfully! Welcome to FinTrack. Add your monthly salary to get started.", "success")
-
-            return redirect(url_for('dashboard'))
+            flash("Account registered! Welcome to FinTrack. Let's configure your monthly salary and category budgets.", "success")
+            return redirect(url_for('setup', new=1))
         except Exception as e:
             conn.rollback()
             flash(f"Registration error: {str(e)}", "danger")
@@ -341,6 +337,120 @@ def logout():
     session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for('login'))
+
+@app.route('/setup', methods=['GET', 'POST'])
+def setup():
+    """Onboarding Setup Wizard & Salary/Budget Rebalancer for new and existing users."""
+    user = get_current_user()
+    current_month = datetime.now().strftime('%Y-%m')
+
+    user_info = db.query_one(
+        "SELECT user_id, name, email, NVL(monthly_salary, 0) AS monthly_salary FROM Users WHERE user_id = :usr_id",
+        {'usr_id': user['id']}
+    )
+    user_accounts = db.query_all(
+        "SELECT account_id, account_type, balance, status FROM Accounts WHERE user_id = :usr_id AND status = 'Active' ORDER BY account_id",
+        {'usr_id': user['id']}
+    )
+    categories = db.query_all(
+        "SELECT category_id, category_name FROM Categories WHERE type = 'Expense' ORDER BY category_id"
+    )
+
+    if request.method == 'POST':
+        try:
+            salary = float(request.form.get('salary', 0) or 0)
+        except (ValueError, TypeError):
+            salary = 0.0
+
+        employer = request.form.get('employer', '').strip() or 'Employer Salary'
+        account_id = int(request.form.get('account_id', 0) or 0)
+        deposit_now = request.form.get('deposit_now') == 'on'
+
+        # 1. Update baseline monthly salary in Users table
+        db.execute_dml(
+            "UPDATE Users SET monthly_salary = :sal WHERE user_id = :usr_id",
+            {'sal': salary, 'usr_id': user['id']}
+        )
+
+        # 2. Deposit salary if requested and valid
+        if deposit_now and salary > 0 and account_id > 0:
+            acc = db.query_one(
+                "SELECT account_id, account_type, status FROM Accounts WHERE account_id = :aid AND user_id = :usr_id",
+                {'aid': account_id, 'usr_id': user['id']}
+            )
+            if acc and acc.get('status') == 'Active':
+                try:
+                    db.execute_dml(
+                        """INSERT INTO Transactions (account_id, category_id, amount, txn_type, txn_date, vendor, description)
+                           VALUES (:1, 1, :2, 'Credit', SYSDATE, :3, 'Monthly Salary Credit')""",
+                        [account_id, salary, employer]
+                    )
+                except Exception as e:
+                    flash(f"Note on salary deposit: {str(e)}", "warning")
+
+        # 3. Upsert Category Budgets for the active month using Oracle MERGE
+        merge_sql = """
+            MERGE INTO Budgets b
+            USING (SELECT :usr_id AS user_id, :cat_id AS category_id, :month AS month, :limit_amt AS limit_amount FROM dual) src
+            ON (b.user_id = src.user_id AND b.category_id = src.category_id AND b.month = src.month)
+            WHEN MATCHED THEN
+                UPDATE SET b.limit_amount = src.limit_amount
+            WHEN NOT MATCHED THEN
+                INSERT (user_id, category_id, month, limit_amount)
+                VALUES (src.user_id, src.category_id, src.month, src.limit_amount)
+        """
+        budgets_saved_count = 0
+        for cat in categories:
+            raw_val = request.form.get(f'budget_{cat["category_id"]}', 0)
+            try:
+                limit_amt = float(raw_val or 0)
+            except (ValueError, TypeError):
+                limit_amt = 0.0
+
+            if limit_amt > 0:
+                db.execute_dml(merge_sql, {
+                    'usr_id': user['id'],
+                    'cat_id': cat['category_id'],
+                    'month': current_month,
+                    'limit_amt': limit_amt
+                })
+                budgets_saved_count += 1
+            else:
+                db.execute_dml(
+                    "DELETE FROM Budgets WHERE user_id = :usr_id AND category_id = :cat_id AND month = :month",
+                    {'usr_id': user['id'], 'cat_id': cat['category_id'], 'month': current_month}
+                )
+
+        if request.args.get('new') == '1':
+            flash(f"🎉 Welcome to FinTrack! Your monthly salary of ₹{salary:,.2f} and {budgets_saved_count} category budgets are active.", "success")
+        else:
+            flash(f"✅ Monthly salary updated to ₹{salary:,.2f} and {budgets_saved_count} category budgets rebalanced successfully!", "success")
+
+        return redirect(url_for('dashboard'))
+
+    # GET Request: Fetch existing budgets
+    existing_budgets = db.query_all(
+        "SELECT category_id, limit_amount FROM Budgets WHERE user_id = :usr_id AND month = :month",
+        {'usr_id': user['id'], 'month': current_month}
+    )
+    existing_budget_map = {b['category_id']: b['limit_amount'] for b in existing_budgets}
+
+    current_salary = user_info.get('monthly_salary', 0.0) if user_info else 0.0
+    if current_salary == 0:
+        current_salary = 60000.00
+
+    is_new = request.args.get('new') == '1' or (len(existing_budget_map) == 0 and (not user_info or user_info.get('monthly_salary', 0) == 0))
+
+    return render_template(
+        'setup.html',
+        current_salary=current_salary,
+        employer='Employer Salary',
+        accounts=user_accounts,
+        categories=categories,
+        existing_budget_map=existing_budget_map,
+        current_month=current_month,
+        is_new=is_new
+    )
 
 # --- CORE APPLICATION ROUTES ---
 

@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Setup & Budget Planner{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-9 col-lg-10">
+
+        <!-- Top Header & Context Banner -->
+        <div class="mb-4">
+            {% if is_new %}
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-primary bg-opacity-10 text-primary small fw-bold mb-2">
+                <i class="bi bi-stars"></i> Welcome Onboard &bull; 2-Minute Quick Setup
+            </div>
+            <h2 class="fw-bold text-dark mb-1">Set Up Your Financial Plan</h2>
+            <p class="text-muted">Configure your monthly salary and smart category budgets so FinTrack can activate your live balance and threshold guardrails.</p>
+            {% else %}
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-success bg-opacity-10 text-success small fw-bold mb-2">
+                <i class="bi bi-arrow-repeat"></i> Income & Budget Rebalancer
+            </div>
+            <h2 class="fw-bold text-dark mb-1">Update Monthly Salary & Budgets</h2>
+            <p class="text-muted">Salary changed or received a promotion? Update your monthly income below to rebalance and scale your category spending limits.</p>
+            {% endif %}
+        </div>
+
+        <form method="POST" action="{{ url_for('setup') }}" id="setupForm">
+            <!-- Step 1: Monthly Salary & Primary Deposit Account -->
+            <div class="card card-custom p-3 p-md-4 mb-4 border-0 shadow-sm" style="border-left: 4px solid #10b981 !important;">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="bi bi-wallet2 text-white"></i>
+                    </span>
+                    <div>
+                        <h5 class="fw-bold mb-0">1. Monthly Salary & Income Details</h5>
+                        <p class="text-muted small mb-0">Your expected net monthly take-home income</p>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Monthly Salary / Income (₹)</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light text-muted fw-bold">₹</span>
+                            <input type="number" step="100" min="1" name="salary" id="salaryInput" class="form-control fw-bold fs-4 text-success" 
+                                   value="{{ current_salary or '60000.00' }}" placeholder="60000.00" required autofocus>
+                        </div>
+                        <div class="form-text small text-muted">Enter your monthly salary. Category budgets will automatically scale based on this amount.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Employer / Income Source</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-building"></i></span>
+                            <input type="text" name="employer" class="form-control" placeholder="e.g. Google / TCS / Tech Corp" value="{{ employer or 'Employer Salary' }}">
+                        </div>
+                        <div class="form-text small text-muted">Source or company name logged in your audit ledger.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Deposit into Account</label>
+                        <select name="account_id" class="form-select" required>
+                            {% for acc in accounts %}
+                            <option value="{{ acc.account_id }}">
+                                {{ acc.account_type }} Account (Available: ₹{{ "{:,.2f}".format(acc.balance) }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="form-check form-switch p-3 rounded-3 bg-light w-100 border">
+                            <input class="form-check-input ms-0 me-3" type="checkbox" name="deposit_now" id="depositNowCheck" checked>
+                            <label class="form-check-label fw-semibold text-dark small" for="depositNowCheck">
+                                Deposit salary into account now
+                                <span class="d-block text-muted fw-normal" style="font-size: 0.75rem;">
+                                    Oracle trigger <code>trg_update_account_balance</code> will immediately fund your account balance.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Smart Budget Allocation Engine -->
+            <div class="card card-custom p-3 p-md-4 mb-4 border-0 shadow-sm" style="border-left: 4px solid #4f46e5 !important;">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                            <i class="bi bi-pie-chart text-white"></i>
+                        </span>
+                        <div>
+                            <h5 class="fw-bold mb-0">2. Smart Monthly Category Budgets</h5>
+                            <p class="text-muted small mb-0">Configure spending caps for <strong>{{ current_month }}</strong>. Triggers will alert you if any limit is breached.</p>
+                        </div>
+                    </div>
+
+                    <!-- Preset Allocation Buttons -->
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyPreset('50-30-20')">
+                            <i class="bi bi-magic me-1"></i> 50/30/20 Rule
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" onclick="applyPreset('conservative')">
+                            <i class="bi bi-shield-check me-1"></i> Conservative (40% Save)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Allocation & Surplus Metrics Bar -->
+                <div class="row g-2 p-3 mb-4 rounded-3 bg-light border">
+                    <div class="col-4 text-center border-end">
+                        <div class="small text-muted text-uppercase" style="font-size: 0.72rem;">Monthly Salary</div>
+                        <div class="fw-bold fs-6 text-dark" id="displaySalary">₹60,000.00</div>
+                    </div>
+                    <div class="col-4 text-center border-end">
+                        <div class="small text-muted text-uppercase" style="font-size: 0.72rem;">Total Budgets</div>
+                        <div class="fw-bold fs-6 text-primary" id="displayTotalBudgets">₹46,000.00</div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="small text-muted text-uppercase" style="font-size: 0.72rem;">Projected Savings</div>
+                        <div class="fw-bold fs-6 text-success" id="displaySurplus">₹14,000.00 (23.3%)</div>
+                    </div>
+                </div>
+
+                <!-- Category Input Grid -->
+                <div class="row g-3">
+                    {% for cat in categories %}
+                    {% set cat_id_str = cat.category_id|string %}
+                    {% set existing_val = existing_budget_map.get(cat.category_id, 0.0) %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-3 rounded-3 border bg-white h-100 d-flex flex-column justify-content-between">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-dark small">
+                                    {% if cat.category_name == 'Rent & Housing' %}<i class="bi bi-house-door text-primary me-1"></i>
+                                    {% elif cat.category_name == 'Groceries' %}<i class="bi bi-cart3 text-success me-1"></i>
+                                    {% elif cat.category_name == 'Food & Dining' %}<i class="bi bi-cup-hot text-danger me-1"></i>
+                                    {% elif cat.category_name == 'Utilities' %}<i class="bi bi-lightning text-warning me-1"></i>
+                                    {% elif cat.category_name == 'Transportation' %}<i class="bi bi-car-front text-info me-1"></i>
+                                    {% elif cat.category_name == 'Entertainment' %}<i class="bi bi-film text-purple me-1"></i>
+                                    {% elif cat.category_name == 'Shopping' %}<i class="bi bi-bag-check text-pink me-1"></i>
+                                    {% elif cat.category_name == 'Subscriptions' %}<i class="bi bi-arrow-repeat text-indigo me-1"></i>
+                                    {% elif cat.category_name == 'Healthcare' %}<i class="bi bi-heart-pulse text-danger me-1"></i>
+                                    {% else %}<i class="bi bi-tag text-secondary me-1"></i>
+                                    {% endif %}
+                                    {{ cat.category_name }}
+                                </span>
+                                <span class="badge bg-light text-muted small category-pct" data-cat-id="{{ cat.category_id }}" style="font-size: 0.7rem;">
+                                    0%
+                                </span>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">₹</span>
+                                <input type="number" step="100" min="0" 
+                                       name="budget_{{ cat.category_id }}" 
+                                       id="cat_{{ cat.category_id }}" 
+                                       class="form-control budget-field" 
+                                       data-cat-name="{{ cat.category_name }}"
+                                       value="{{ existing_val if existing_val > 0 else 0 }}" 
+                                       oninput="recalculateTotals()">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Submit Action Card -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 p-md-4 rounded-3 bg-white border shadow-sm mb-5">
+                <div>
+                    <h6 class="fw-bold mb-1">Ready to activate your financial plan?</h6>
+                    <p class="text-muted small mb-0">Oracle 19c database triggers and window functions will monitor these thresholds in real time.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary px-3">
+                        Skip to Dashboard
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4 py-2.5 fw-bold shadow-sm">
+                        <i class="bi bi-check-circle-fill me-1"></i> Save Plan & Launch Dashboard 🚀
+                    </button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Category distribution ratio models
+    const presets = {
+        '50-30-20': {
+            'Rent & Housing': 0.28,
+            'Groceries': 0.14,
+            'Food & Dining': 0.08,
+            'Utilities': 0.06,
+            'Transportation': 0.06,
+            'Entertainment': 0.06,
+            'Shopping': 0.05,
+            'Subscriptions': 0.03,
+            'Healthcare': 0.04
+        },
+        'conservative': {
+            'Rent & Housing': 0.22,
+            'Groceries': 0.12,
+            'Food & Dining': 0.05,
+            'Utilities': 0.05,
+            'Transportation': 0.05,
+            'Entertainment': 0.03,
+            'Shopping': 0.03,
+            'Subscriptions': 0.02,
+            'Healthcare': 0.03
+        }
+    };
+
+    function applyPreset(presetKey) {
+        const salary = parseFloat(document.getElementById('salaryInput').value) || 0;
+        if (salary <= 0) {
+            alert('Please enter a valid monthly salary first.');
+            return;
+        }
+
+        const model = presets[presetKey];
+        if (!model) return;
+
+        const inputs = document.querySelectorAll('.budget-field');
+        inputs.forEach(input => {
+            const catName = input.dataset.catName;
+            if (model[catName] !== undefined) {
+                // Round to nearest hundred
+                const allocated = Math.round((salary * model[catName]) / 100) * 100;
+                input.value = allocated;
+            } else {
+                input.value = 0;
+            }
+        });
+
+        recalculateTotals();
+    }
+
+    function recalculateTotals() {
+        const salary = parseFloat(document.getElementById('salaryInput').value) || 0;
+        let totalBudgets = 0;
+
+        const inputs = document.querySelectorAll('.budget-field');
+        inputs.forEach(input => {
+            const val = parseFloat(input.value) || 0;
+            totalBudgets += val;
+
+            const badge = document.querySelector(`.category-pct[data-cat-id="${input.id.replace('cat_', '')}"]`);
+            if (badge && salary > 0) {
+                const pct = ((val / salary) * 100).toFixed(1);
+                badge.innerText = `${pct}%`;
+            }
+        });
+
+        const surplus = salary - totalBudgets;
+        const surplusPct = salary > 0 ? ((surplus / salary) * 100).toFixed(1) : 0;
+
+        document.getElementById('displaySalary').innerText = `₹${salary.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('displayTotalBudgets').innerText = `₹${totalBudgets.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        const surplusEl = document.getElementById('displaySurplus');
+        if (surplus >= 0) {
+            surplusEl.className = 'fw-bold fs-6 text-success';
+            surplusEl.innerText = `₹${surplus.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${surplusPct}%)`;
+        } else {
+            surplusEl.className = 'fw-bold fs-6 text-danger';
+            surplusEl.innerText = `-₹${Math.abs(surplus).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (Over Budget!)`;
+        }
+    }
+
+    document.getElementById('salaryInput').addEventListener('input', function() {
+        recalculateTotals();
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // If all budget fields are 0, initialize with 50/30/20 preset automatically!
+        let allZero = true;
+        document.querySelectorAll('.budget-field').forEach(input => {
+            if (parseFloat(input.value) > 0) allZero = false;
+        });
+
+        if (allZero) {
+            applyPreset('50-30-20');
+        } else {
+            recalculateTotals();
+        }
+    });
+</script>
+{% endblock %}

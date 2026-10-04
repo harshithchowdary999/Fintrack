@@ -8,9 +8,14 @@
         <h3 class="fw-bold mb-1">Monthly Budgets</h3>
         <p class="text-muted mb-0 small">Set spending targets and get flagged before you overspend.</p>
     </div>
-    <button class="btn btn-primary w-100 w-sm-auto mt-2 mt-sm-0" data-bs-toggle="modal" data-bs-target="#newBudgetModal">
-        <i class="bi bi-plus-lg me-1"></i> Set Category Budget
-    </button>
+    <div class="d-flex gap-2 w-100 w-sm-auto mt-2 mt-sm-0">
+        <a href="{{ url_for('setup') }}" class="btn btn-outline-primary">
+            <i class="bi bi-sliders me-1"></i> Smart Budget Planner
+        </a>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newBudgetModal">
+            <i class="bi bi-plus-lg me-1"></i> Add Single Budget
+        </button>
+    </div>
 </div>
 
 <!-- Month Selector Bar & Cycle Header -->
