@@ -3,95 +3,95 @@
 {% block title %}Subscriptions & Monthly Billing Cycle{% endblock %}
 
 {% block content %}
-<div class="row align-items-center mb-4">
+<div class="row align-items-center mb-3 mb-md-4">
     <div class="col-md-7">
-        <div class="d-flex align-items-center gap-2 mb-1">
-            <h3 class="fw-bold mb-0">Subscriptions & Monthly Billing Cycle</h3>
+        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+            <h3 class="fw-bold mb-0">Subscriptions & Monthly Bills</h3>
             <span class="badge bg-primary text-white text-uppercase px-2 py-1 small">{{ cycle.month_name }}</span>
         </div>
-        <p class="text-muted mb-0">Track automated subscriptions, renewal schedules, and scheduled monthly billing cycles.</p>
+        <p class="text-muted mb-0 small">Track automated subscriptions, renewal schedules, and scheduled monthly billing cycles.</p>
     </div>
-    <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
-        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newRecurringModal">
-            <i class="bi bi-plus-lg me-1"></i> Add Subscription
+    <div class="col-md-5 text-md-end mt-2 mt-md-0 d-flex justify-content-md-end gap-2 flex-wrap">
+        <button class="btn btn-outline-primary flex-fill flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#newRecurringModal">
+            <i class="bi bi-plus-lg me-1"></i> Add Sub
         </button>
-        <form action="{{ url_for('run_recurring_procedure') }}" method="POST" class="m-0">
-            <button type="submit" class="btn btn-primary shadow-sm fw-semibold">
-                <i class="bi bi-lightning-charge-fill me-1"></i> Process Due Payments
+        <form action="{{ url_for('run_recurring_procedure') }}" method="POST" class="m-0 flex-fill flex-md-grow-0">
+            <button type="submit" class="btn btn-primary shadow-sm fw-semibold w-100">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Process Due
             </button>
         </form>
     </div>
 </div>
 
-<!-- 4 Monthly Cycle Telemetry Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="card card-custom stat-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="stat-label">Committed Overhead</div>
+<!-- 4 Monthly Cycle Telemetry Cards (2x2 on Mobile, 4-col on Desktop) -->
+<div class="row g-2 g-md-3 mb-3 mb-md-4">
+    <div class="col-6 col-xl-3">
+        <div class="card card-custom stat-card h-100 p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="stat-label">Committed</div>
                 <div class="stat-icon bg-primary bg-opacity-10 text-primary">
                     <i class="bi bi-calendar-check"></i>
                 </div>
             </div>
             <div class="stat-value text-dark">₹{{ "{:,.2f}".format(cycle.total_monthly_commitments) }}</div>
-            <div class="small text-muted mt-2">
-                <i class="bi bi-repeat me-1"></i> Total monthly fixed bills
+            <div class="small text-muted mt-2 text-truncate" style="font-size: 0.75rem;">
+                <i class="bi bi-repeat me-1"></i> Total monthly bills
             </div>
         </div>
     </div>
 
-    <div class="col-sm-6 col-xl-3">
-        <div class="card card-custom stat-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="stat-label">Billed this Cycle</div>
+    <div class="col-6 col-xl-3">
+        <div class="card card-custom stat-card h-100 p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="stat-label">Billed</div>
                 <div class="stat-icon bg-success bg-opacity-10 text-success">
                     <i class="bi bi-check2-circle"></i>
                 </div>
             </div>
             <div class="stat-value text-success">₹{{ "{:,.2f}".format(cycle.processed_bills) }}</div>
-            <div class="small text-muted mt-2">
-                <i class="bi bi-check-lg me-1"></i> Already debited in {{ cycle.month }}
+            <div class="small text-muted mt-2 text-truncate" style="font-size: 0.75rem;">
+                <i class="bi bi-check-lg me-1"></i> Debited in {{ cycle.month }}
             </div>
         </div>
     </div>
 
-    <div class="col-sm-6 col-xl-3">
-        <div class="card card-custom stat-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="stat-label">Upcoming this Cycle</div>
+    <div class="col-6 col-xl-3">
+        <div class="card card-custom stat-card h-100 p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="stat-label">Upcoming</div>
                 <div class="stat-icon bg-warning bg-opacity-10 text-warning">
                     <i class="bi bi-clock-history"></i>
                 </div>
             </div>
             <div class="stat-value text-dark">₹{{ "{:,.2f}".format(cycle.upcoming_bills) }}</div>
-            <div class="small text-muted mt-2">
-                <i class="bi bi-hourglass-split me-1"></i> Pending scheduled bills
+            <div class="small text-muted mt-2 text-truncate" style="font-size: 0.75rem;">
+                <i class="bi bi-hourglass-split me-1"></i> Pending bills
             </div>
         </div>
     </div>
 
-    <div class="col-sm-6 col-xl-3">
-        <div class="card card-custom stat-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="stat-label">Cycle Timeline</div>
+    <div class="col-6 col-xl-3">
+        <div class="card card-custom stat-card h-100 p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="stat-label">Timeline</div>
                 <div class="stat-icon bg-info bg-opacity-10 text-info">
                     <i class="bi bi-calendar3"></i>
                 </div>
             </div>
-            <div class="stat-value text-primary">Day {{ cycle.current_day }} / {{ cycle.total_days }}</div>
-            <div class="small text-muted mt-2">
-                <i class="bi bi-clock me-1"></i> {{ cycle.days_remaining }} day(s) left in cycle
+            <div class="stat-value text-primary">Day {{ cycle.current_day }}/{{ cycle.total_days }}</div>
+            <div class="small text-muted mt-2 text-truncate" style="font-size: 0.75rem;">
+                <i class="bi bi-clock me-1"></i> {{ cycle.days_remaining }}d left
             </div>
         </div>
     </div>
 </div>
 
 <!-- Interactive 31-Day Billing Cycle Visual Timeline -->
-<div class="card card-custom p-4 mb-4">
+<div class="card card-custom p-3 p-md-4 mb-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
-            <h5 class="fw-bold mb-1">Monthly Billing Cycle Timeline ({{ cycle.month_name }})</h5>
-            <span class="small text-muted">Chronological map of recurring payments and subscriptions across the 31-day cycle</span>
+            <h5 class="fw-bold mb-1">Billing Timeline ({{ cycle.month_name }})</h5>
+            <span class="small text-muted">Recurring payments mapped across the 31-day cycle</span>
         </div>
         <div class="d-flex align-items-center gap-2">
             <span class="badge bg-success bg-opacity-10 text-success border border-success small">
@@ -104,33 +104,33 @@
     </div>
 
     <!-- Cycle Progress Indicator -->
-    <div class="position-relative mb-4">
-        <div class="progress" style="height: 12px; border-radius: 8px;">
+    <div class="position-relative mb-3">
+        <div class="progress" style="height: 10px; border-radius: 6px;">
             <div class="progress-bar bg-primary" role="progressbar" style="width: {{ cycle.cycle_progress_percent }}%;" aria-valuenow="{{ cycle.cycle_progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
-        <div class="d-flex justify-content-between text-muted small mt-1 font-monospace" style="font-size: 0.76rem;">
-            <span>Day 1 (Cycle Start)</span>
-            <span class="fw-bold text-primary">Today: Day {{ cycle.current_day }} ({{ cycle.cycle_progress_percent }}% of cycle elapsed)</span>
-            <span>Day {{ cycle.total_days }} (Cycle Close)</span>
+        <div class="d-flex justify-content-between text-muted small mt-1 font-monospace" style="font-size: 0.74rem;">
+            <span>Day 1</span>
+            <span class="fw-bold text-primary">Day {{ cycle.current_day }} ({{ cycle.cycle_progress_percent }}%)</span>
+            <span>Day {{ cycle.total_days }}</span>
         </div>
     </div>
 
     <!-- Chronological Scheduled Bills Cards -->
     {% if cycle.timeline_events %}
-    <div class="row g-3">
+    <div class="row g-2 g-md-3">
         {% for ev in cycle.timeline_events %}
-        <div class="col-md-6 col-xl-3">
-            <div class="p-3 rounded-3 border bg-light h-100 position-relative" style="border-left: 4px solid {% if ev.badge_class == 'success' %}#10b981{% elif ev.badge_class == 'danger' %}#ef4444{% else %}#3b82f6{% endif %} !important;">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="badge bg-white text-dark border font-monospace fw-bold">Day {{ ev.day }}</span>
-                    <span class="badge bg-{{ ev.badge_class }} bg-opacity-10 text-{{ ev.badge_class }} border border-{{ ev.badge_class }} small">
+        <div class="col-6 col-md-6 col-xl-3">
+            <div class="p-2.5 p-md-3 rounded-3 border bg-light h-100 position-relative" style="border-left: 4px solid {% if ev.badge_class == 'success' %}#10b981{% elif ev.badge_class == 'danger' %}#ef4444{% else %}#3b82f6{% endif %} !important;">
+                <div class="d-flex justify-content-between align-items-start mb-1.5">
+                    <span class="badge bg-white text-dark border font-monospace fw-bold" style="font-size: 0.72rem;">Day {{ ev.day }}</span>
+                    <span class="badge bg-{{ ev.badge_class }} bg-opacity-10 text-{{ ev.badge_class }} border border-{{ ev.badge_class }}" style="font-size: 0.68rem;">
                         {{ ev.status }}
                     </span>
                 </div>
-                <div class="fw-bold text-dark fs-6">{{ ev.title }}</div>
-                <div class="small text-muted mb-2">{{ ev.account }} &bull; {{ ev.frequency }}</div>
+                <div class="fw-bold text-dark fs-6 text-truncate">{{ ev.title }}</div>
+                <div class="small text-muted mb-2 text-truncate" style="font-size: 0.74rem;">{{ ev.account }} &bull; {{ ev.frequency }}</div>
                 <div class="d-flex justify-content-between align-items-center pt-2 border-top">
-                    <span class="small text-muted font-monospace">{{ ev.due_date }}</span>
+                    <span class="small text-muted font-monospace" style="font-size: 0.72rem;">{{ ev.due_date }}</span>
                     <span class="fw-bold text-danger fs-6">₹{{ "{:,.2f}".format(ev.amount) }}</span>
                 </div>
             </div>
@@ -145,14 +145,57 @@
     {% endif %}
 </div>
 
-<!-- Recurring Payments Schedule Table -->
-<div class="card card-custom p-4 mb-4">
+<!-- Recurring Payments Schedule Cards & Table -->
+<div class="card card-custom p-3 p-md-4 mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold mb-0">Active Recurring Schedules</h5>
-        <span class="badge bg-light text-dark border">{{ recurring|length }} active schedule(s)</span>
+        <span class="badge bg-light text-dark border">{{ recurring|length }} active</span>
     </div>
 
-    <div class="table-responsive">
+    <!-- Mobile Subscription Cards (Visible on Mobile Only) -->
+    <div class="d-md-none">
+        {% if recurring %}
+            <div class="list-group list-group-flush">
+                {% for r in recurring %}
+                <div class="mobile-txn-card d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <div class="txn-avatar bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-repeat"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 170px; font-size: 0.92rem;">
+                                {{ r.category_name }}
+                            </div>
+                            <div class="d-flex align-items-center gap-1 mt-0.5" style="font-size: 0.74rem;">
+                                <span class="badge-category-mini">{{ r.frequency }}</span>
+                                <span class="text-muted">&bull;</span>
+                                <span class="text-muted font-monospace">{{ r.due_date_str }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-end ps-2">
+                        <div class="fw-bold text-danger fs-6 text-nowrap">
+                            ₹{{ "{:,.2f}".format(r.amount) }}
+                        </div>
+                        {% if r.is_due == 1 %}
+                        <span class="badge-soft-danger" style="font-size: 0.7rem;">Due Now</span>
+                        {% else %}
+                        <span class="badge-soft-success" style="font-size: 0.7rem;">Scheduled</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-calendar-x fs-1 text-secondary"></i>
+                <p class="mt-2 mb-0">No active subscriptions or bills found.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Desktop Table View -->
+    <div class="table-responsive d-none d-md-block">
         <table class="table table-modern">
             <thead>
                 <tr>

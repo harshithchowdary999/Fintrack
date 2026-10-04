@@ -366,3 +366,355 @@ footer {
     font-size: 0.85rem;
     color: var(--gray-500);
 }
+
+/* ===================================================
+   MOBILE & RESPONSIVE UX ENHANCEMENTS
+   =================================================== */
+
+/* Smooth momentum scrolling for responsive tables on phones */
+.table-responsive {
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+    /* Mobile Container Padding */
+    .container-fluid {
+        padding-left: 0.85rem !important;
+        padding-right: 0.85rem !important;
+    }
+
+    body {
+        font-size: 0.9rem;
+    }
+
+    /* Navbar on Mobile */
+    .navbar-custom {
+        padding: 0.65rem 0.85rem;
+    }
+
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+
+    .navbar-brand-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.95rem;
+        border-radius: 8px;
+    }
+
+    /* Mobile Drawer Collapse */
+    .navbar-collapse {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 1rem;
+        margin-top: 0.75rem;
+        box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.12);
+        border: 1px solid var(--gray-200);
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.65rem 0.85rem !important;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        margin-bottom: 0.2rem;
+    }
+
+    .navbar-nav .nav-link.active {
+        background-color: var(--primary-light);
+        color: var(--primary) !important;
+    }
+
+    /* Cards on Mobile */
+    .card-custom {
+        border-radius: 14px;
+        padding: 1.15rem !important;
+    }
+
+    /* Stat Cards */
+    .stat-card {
+        padding: 1.15rem !important;
+    }
+
+    .stat-value {
+        font-size: 1.55rem !important;
+    }
+
+    .stat-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 1.2rem;
+        border-radius: 10px;
+    }
+
+    .stat-label {
+        font-size: 0.78rem;
+    }
+
+    /* Virtual Bank Cards */
+    .bank-card {
+        padding: 1.25rem;
+        min-height: 180px;
+        border-radius: 16px;
+    }
+
+    .bank-card .fs-2 {
+        font-size: 1.6rem !important;
+    }
+
+    /* Action Buttons on Mobile */
+    .mobile-action-bar {
+        display: flex;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .mobile-action-bar .btn {
+        flex: 1;
+        font-size: 0.88rem;
+        padding: 0.65rem 0.75rem;
+        text-align: center;
+        white-space: nowrap;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+
+    /* Prevent iOS Safari auto-zoom on input focus */
+    input, select, textarea, .form-control, .form-select {
+        font-size: 16px !important;
+    }
+
+    .form-control, .form-select {
+        padding: 0.65rem 0.85rem;
+        border-radius: 10px;
+    }
+
+    .input-group-lg .form-control {
+        font-size: 1.5rem !important;
+    }
+
+    /* Preset amount grid */
+    .preset-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .preset-btn {
+        padding: 0.45rem 0.5rem;
+        font-size: 0.82rem;
+        text-align: center;
+        border-radius: 10px;
+        width: 100%;
+    }
+
+    /* Padding to clear fixed mobile bottom navigation bar */
+    body {
+        padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* Auth Page on Mobile */
+    .auth-wrapper {
+        min-height: auto;
+        padding: 1.25rem 0.65rem;
+    }
+
+    .auth-brand-header {
+        padding: 0.85rem 1rem;
+    }
+
+    /* Modals on Mobile */
+    .modal-dialog {
+        margin: 0.75rem;
+    }
+
+    .modal-content {
+        border-radius: 20px !important;
+    }
+
+    /* Footer on Mobile */
+    footer {
+        padding: 1rem 0;
+        font-size: 0.78rem;
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* ===================================================
+   MOBILE NATIVE BOTTOM NAVIGATION BAR
+   =================================================== */
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(226, 232, 240, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 1040;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--gray-500);
+    font-size: 0.72rem;
+    font-weight: 600;
+    flex: 1;
+    height: 100%;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-item i {
+    font-size: 1.25rem;
+    margin-bottom: 2px;
+    transition: transform 0.15s ease;
+}
+
+.mobile-nav-item:hover,
+.mobile-nav-item:focus {
+    color: var(--primary);
+}
+
+.mobile-nav-item.active {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.mobile-nav-item.active i {
+    transform: scale(1.1);
+}
+
+.mobile-nav-action {
+    position: relative;
+}
+
+.mobile-action-circle {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+    margin-top: -16px;
+    margin-bottom: 2px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.mobile-action-circle i {
+    font-size: 1.2rem;
+    color: #ffffff;
+    margin-bottom: 0;
+}
+
+.mobile-nav-action:active .mobile-action-circle {
+    transform: scale(0.92);
+}
+
+/* ===================================================
+   MOBILE TRANSACTION FEED / LIST
+   =================================================== */
+.mobile-txn-card {
+    padding: 0.95rem 0.5rem;
+    border-bottom: 1px solid var(--gray-100);
+    transition: background-color 0.15s ease;
+    border-radius: 12px;
+}
+
+.mobile-txn-card:last-child {
+    border-bottom: none;
+}
+
+.mobile-txn-card:active {
+    background-color: var(--gray-50);
+}
+
+.txn-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+
+.txn-avatar-credit {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.txn-avatar-debit {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.badge-category-mini {
+    background-color: #f1f5f9;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+}
+
+.badge-account-mini {
+    font-size: 0.72rem;
+    font-weight: 500;
+    display: block;
+}
+
+/* Mobile Budget Card */
+.mobile-budget-card {
+    background: #ffffff;
+    border: 1px solid var(--gray-200);
+    border-radius: 14px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+@media (max-width: 480px) {
+    .stat-value {
+        font-size: 1.35rem !important;
+    }
+
+    h3.fw-bold {
+        font-size: 1.3rem;
+    }
+
+    h4.fw-bold {
+        font-size: 1.15rem;
+    }
+
+    h5.fw-bold {
+        font-size: 1rem;
+    }
+
+    .bank-card .fs-2 {
+        font-size: 1.35rem !important;
+    }
+
+    .preset-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+

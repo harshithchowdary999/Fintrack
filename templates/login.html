@@ -3,9 +3,9 @@
 {% block title %}Sign In{% endblock %}
 
 {% block content %}
-<div class="card card-custom p-4 p-md-5 shadow-sm border-0">
-    <div class="text-center mb-4">
-        <div class="navbar-brand-icon mx-auto mb-3" style="width: 52px; height: 52px; font-size: 1.5rem;">
+<div class="card card-custom p-3 p-sm-4 p-md-5 shadow-sm border-0">
+    <div class="text-center mb-3 mb-md-4">
+        <div class="navbar-brand-icon mx-auto mb-2 mb-md-3" style="width: 48px; height: 48px; font-size: 1.4rem;">
             <i class="bi bi-wallet2"></i>
         </div>
         <h4 class="fw-bold mb-1">Welcome to FinTrack</h4>
@@ -13,7 +13,7 @@
     </div>
 
     {% if session.get('user_name') %}
-    <div class="card bg-light border p-3 mb-4 rounded-3 text-center">
+    <div class="card bg-light border p-3 mb-3 mb-md-4 rounded-3 text-center">
         <div class="d-flex align-items-center justify-content-center gap-2 mb-2 flex-wrap">
             <i class="bi bi-person-check-fill text-primary"></i>
             <span class="text-muted small">Active Session:</span>
@@ -36,7 +36,7 @@
             <label class="form-label fw-bold small text-muted text-uppercase">Email Address</label>
             <div class="input-group">
                 <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-envelope"></i></span>
-                <input type="email" name="email" class="form-control border-start-0" placeholder="harshith@example.com" value="harshith@example.com" required autofocus>
+                <input type="email" inputmode="email" name="email" class="form-control border-start-0" placeholder="harshith@example.com" value="harshith@example.com" required autofocus>
             </div>
         </div>
 

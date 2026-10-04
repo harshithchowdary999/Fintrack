@@ -3,18 +3,18 @@
 {% block title %}Accounts{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 mb-md-4">
     <div>
         <h3 class="fw-bold mb-1">Your Accounts & Wallets</h3>
-        <p class="text-muted mb-0">Manage balances, open new accounts, and review active deposit methods.</p>
+        <p class="text-muted mb-0 small">Manage balances, open new accounts, and review active deposit methods.</p>
     </div>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAccountModal">
+    <button class="btn btn-primary w-100 w-sm-auto mt-2 mt-sm-0" data-bs-toggle="modal" data-bs-target="#newAccountModal">
         <i class="bi bi-plus-lg me-1"></i> Open New Account
     </button>
 </div>
 
 <!-- Virtual Bank Cards Grid -->
-<div class="row g-4 mb-4">
+<div class="row g-3 g-md-4 mb-4">
     {% for acc in accounts %}
     <div class="col-md-6 col-lg-4">
         {% if acc.account_type == 'Savings' %}

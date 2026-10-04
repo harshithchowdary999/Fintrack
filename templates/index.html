@@ -4,13 +4,13 @@
 
 {% block content %}
 <!-- Top Welcome & Action Header -->
-<div class="row align-items-center mb-4">
+<div class="row align-items-center mb-3 mb-md-4">
     <div class="col-md-7">
         <h3 class="fw-bold mb-1">Financial Overview</h3>
-        <p class="text-muted mb-0">Here is your financial pulse for <strong>{{ current_month }}</strong>.</p>
+        <p class="text-muted mb-0 small">Here is your financial pulse for <strong>{{ current_month }}</strong>.</p>
     </div>
-    <div class="col-md-5 text-md-end mt-3 mt-md-0">
-        <div class="d-inline-flex gap-2">
+    <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <div class="mobile-action-bar justify-content-md-end">
             <a href="{{ url_for('transfer') }}" class="btn btn-outline-primary">
                 <i class="bi bi-arrow-left-right me-1"></i> Send Money
             </a>
@@ -22,10 +22,10 @@
 </div>
 
 <!-- Monthly Financial Cycle & Burn Rate Tracker -->
-<div class="card card-custom p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-left: 4px solid #4f46e5 !important;">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+<div class="card card-custom p-3 p-md-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-left: 4px solid #4f46e5 !important;">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                 <span class="badge bg-primary text-white text-uppercase px-2 py-1 small">Active Cycle</span>
                 <h5 class="fw-bold text-dark mb-0">{{ cycle.month_name }} Financial Cycle</h5>
                 <span class="text-muted small">&bull; Day {{ cycle.current_day }} of {{ cycle.total_days }}</span>
@@ -38,15 +38,15 @@
                 {% endif %}
             </p>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge {% if cycle.burn_status == 'On Track' %}badge-soft-success{% elif cycle.burn_status == 'Over Budget' %}badge-soft-danger{% else %}badge-soft-warning{% endif %} px-3 py-2 fw-semibold">
-                <i class="bi bi-speedometer2 me-1"></i> Cycle Pace: {{ cycle.burn_status }}
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge {% if cycle.burn_status == 'On Track' %}badge-soft-success{% elif cycle.burn_status == 'Over Budget' %}badge-soft-danger{% else %}badge-soft-warning{% endif %} px-2 px-sm-3 py-1.5 py-sm-2 fw-semibold">
+                <i class="bi bi-speedometer2 me-1"></i> Pace: {{ cycle.burn_status }}
             </span>
             <a href="{{ url_for('recurring') }}" class="btn btn-sm btn-outline-primary" title="View scheduled bills">
-                <i class="bi bi-calendar-check me-1"></i> Billing Schedule
+                <i class="bi bi-calendar-check me-1"></i> Schedule
             </a>
             <a href="{{ url_for('transactions', month=cycle.month) }}" class="btn btn-sm btn-outline-secondary" title="View transactions in this cycle">
-                <i class="bi bi-receipt me-1"></i> Cycle Ledger
+                <i class="bi bi-receipt me-1"></i> Ledger
             </a>
         </div>
     </div>
@@ -56,88 +56,96 @@
         <div class="progress" style="height: 10px; border-radius: 6px;">
             <div class="progress-bar bg-primary" role="progressbar" style="width: {{ cycle.cycle_progress_percent }}%;" aria-valuenow="{{ cycle.cycle_progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
-        <div class="d-flex justify-content-between text-muted small mt-1" style="font-size: 0.78rem;">
-            <span><i class="bi bi-calendar-event me-1"></i> Day 1 (Cycle Start)</span>
-            <span class="fw-bold text-primary">Day {{ cycle.current_day }} ({{ cycle.cycle_progress_percent }}% of cycle elapsed)</span>
-            <span>Day {{ cycle.total_days }} (Cycle Close) <i class="bi bi-calendar-check ms-1"></i></span>
+        <div class="d-flex justify-content-between text-muted small mt-1" style="font-size: 0.74rem;">
+            <span>Day 1 <span class="d-none d-sm-inline">(Start)</span></span>
+            <span class="fw-bold text-primary">Day {{ cycle.current_day }} ({{ cycle.cycle_progress_percent }}%)</span>
+            <span>Day {{ cycle.total_days }} <span class="d-none d-sm-inline">(Close)</span></span>
         </div>
     </div>
 
-    <!-- Cycle Key Insights Row -->
-    <div class="row g-3 pt-3 border-top">
+    <!-- Cycle Key Insights Row (2x2 grid on mobile) -->
+    <div class="row g-2 g-md-3 pt-3 border-top">
         <div class="col-6 col-md-3">
-            <div class="small text-muted mb-1"><i class="bi bi-arrow-down-left text-success me-1"></i> Cycle Inflow</div>
-            <div class="fw-bold text-success fs-6">₹{{ "{:,.2f}".format(cycle.cycle_inflow) }}</div>
-            <div class="text-muted" style="font-size: 0.75rem;">Income credited</div>
+            <div class="p-2 p-md-0 rounded-2 bg-light bg-md-transparent">
+                <div class="small text-muted mb-1 text-truncate"><i class="bi bi-arrow-down-left text-success me-1"></i> Inflow</div>
+                <div class="fw-bold text-success fs-6">₹{{ "{:,.2f}".format(cycle.cycle_inflow) }}</div>
+                <div class="text-muted d-none d-sm-block" style="font-size: 0.72rem;">Income credited</div>
+            </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="small text-muted mb-1"><i class="bi bi-arrow-up-right text-danger me-1"></i> Cycle Outflow</div>
-            <div class="fw-bold text-danger fs-6">₹{{ "{:,.2f}".format(cycle.cycle_outflow) }}</div>
-            <div class="text-muted" style="font-size: 0.75rem;">Actual spent to date</div>
+            <div class="p-2 p-md-0 rounded-2 bg-light bg-md-transparent">
+                <div class="small text-muted mb-1 text-truncate"><i class="bi bi-arrow-up-right text-danger me-1"></i> Outflow</div>
+                <div class="fw-bold text-danger fs-6">₹{{ "{:,.2f}".format(cycle.cycle_outflow) }}</div>
+                <div class="text-muted d-none d-sm-block" style="font-size: 0.72rem;">Actual spent to date</div>
+            </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="small text-muted mb-1"><i class="bi bi-clock-history text-warning me-1"></i> Upcoming Bills</div>
-            <div class="fw-bold text-dark fs-6">₹{{ "{:,.2f}".format(cycle.upcoming_bills) }}</div>
-            <div class="text-muted" style="font-size: 0.75rem;">Scheduled recurring bills</div>
+            <div class="p-2 p-md-0 rounded-2 bg-light bg-md-transparent">
+                <div class="small text-muted mb-1 text-truncate"><i class="bi bi-clock-history text-warning me-1"></i> Upcoming Bills</div>
+                <div class="fw-bold text-dark fs-6">₹{{ "{:,.2f}".format(cycle.upcoming_bills) }}</div>
+                <div class="text-muted d-none d-sm-block" style="font-size: 0.72rem;">Scheduled fixed bills</div>
+            </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="small text-muted mb-1"><i class="bi bi-shield-check text-primary me-1"></i> Safe Daily Allowance</div>
-            <div class="fw-bold text-primary fs-6">₹{{ "{:,.2f}".format(cycle.safe_daily_allowance) }} <span class="text-muted fw-normal" style="font-size: 0.72rem;">/ day</span></div>
-            <div class="text-muted" style="font-size: 0.75rem;">{{ cycle.days_remaining }} day(s) remaining pace</div>
+            <div class="p-2 p-md-0 rounded-2 bg-light bg-md-transparent">
+                <div class="small text-muted mb-1 text-truncate"><i class="bi bi-shield-check text-primary me-1"></i> Safe Daily</div>
+                <div class="fw-bold text-primary fs-6">₹{{ "{:,.2f}".format(cycle.safe_daily_allowance) }} <span class="text-muted fw-normal" style="font-size: 0.7rem;">/d</span></div>
+                <div class="text-muted d-none d-sm-block" style="font-size: 0.72rem;">{{ cycle.days_remaining }} day(s) left pace</div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- 4 Key Financial Metrics -->
-<div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="card card-custom stat-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
+<!-- 4 Key Financial Metrics (Neat 2x2 Grid on Mobile, 4-col on Desktop) -->
+<div class="row g-2 g-md-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card card-custom stat-card h-100 p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start mb-1">
                 <div class="stat-label">Net Balance</div>
                 <div class="stat-icon bg-primary bg-opacity-10 text-primary">
                     <i class="bi bi-wallet2"></i>
                 </div>
             </div>
             <div class="stat-value text-dark">₹{{ "{:,.2f}".format(total_balance) }}</div>
-            <div class="small text-muted mt-2">
-                <i class="bi bi-shield-check text-success me-1"></i> Across {{ total_accounts }} active accounts
+            <div class="small text-muted mt-2 text-truncate" style="font-size: 0.75rem;">
+                <i class="bi bi-shield-check text-success me-1"></i> Across {{ total_accounts }} accounts
             </div>
         </div>
     </div>
 
-    <div class="col-sm-6 col-xl-3">
-        <div class="card card-custom stat-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="stat-label">Monthly Income</div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-custom stat-card h-100 p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="stat-label">Income</div>
                 <div class="stat-icon bg-success bg-opacity-10 text-success">
                     <i class="bi bi-arrow-down-left"></i>
                 </div>
             </div>
             <div class="stat-value text-success">₹{{ "{:,.2f}".format(total_income) }}</div>
-            <div class="small text-muted mt-2">
-                <i class="bi bi-calendar-event me-1"></i> Total credits in {{ current_month }}
+            <div class="small text-muted mt-2 text-truncate" style="font-size: 0.75rem;">
+                <i class="bi bi-calendar-event me-1"></i> In {{ current_month }}
             </div>
         </div>
     </div>
 
-    <div class="col-sm-6 col-xl-3">
-        <div class="card card-custom stat-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="stat-label">Monthly Spending</div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-custom stat-card h-100 p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="stat-label">Spending</div>
                 <div class="stat-icon bg-danger bg-opacity-10 text-danger">
                     <i class="bi bi-arrow-up-right"></i>
                 </div>
             </div>
             <div class="stat-value text-danger">₹{{ "{:,.2f}".format(total_expense) }}</div>
-            <div class="small text-muted mt-2">
-                <i class="bi bi-credit-card me-1"></i> Total debits in {{ current_month }}
+            <div class="small text-muted mt-2 text-truncate" style="font-size: 0.75rem;">
+                <i class="bi bi-credit-card me-1"></i> In {{ current_month }}
             </div>
         </div>
     </div>
 
-    <div class="col-sm-6 col-xl-3">
-        <div class="card card-custom stat-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
+    <div class="col-6 col-lg-3">
+        <div class="card card-custom stat-card h-100 p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start mb-1">
                 <div class="stat-label">Net Savings</div>
                 <div class="stat-icon bg-info bg-opacity-10 text-info">
                     <i class="bi bi-piggy-bank"></i>
@@ -147,24 +155,24 @@
             <div class="stat-value {% if net_savings >= 0 %}text-success{% else %}text-danger{% endif %}">
                 ₹{{ "{:,.2f}".format(net_savings) }}
             </div>
-            <div class="small text-muted mt-2">
-                <i class="bi bi-graph-up me-1"></i> Cashflow balance
+            <div class="small text-muted mt-2 text-truncate" style="font-size: 0.75rem;">
+                <i class="bi bi-graph-up me-1"></i> Net cashflow
             </div>
         </div>
     </div>
 </div>
 
 <!-- Middle Section: Spending Breakdown & Budgets -->
-<div class="row g-4 mb-4">
+<div class="row g-3 g-md-4 mb-4">
     <!-- Category Spend Breakdown Chart -->
     <div class="col-lg-6">
-        <div class="card card-custom h-100 p-4">
+        <div class="card card-custom h-100 p-3 p-md-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="fw-bold mb-0">Expense Breakdown</h5>
                 <span class="badge bg-light text-dark border">{{ current_month }}</span>
             </div>
             {% if category_spend %}
-            <div style="height: 280px; position: relative;">
+            <div style="height: 270px; position: relative;">
                 <canvas id="expenseChart"></canvas>
             </div>
             {% else %}
@@ -178,7 +186,7 @@
 
     <!-- Active Budgets Health -->
     <div class="col-lg-6">
-        <div class="card card-custom h-100 p-4">
+        <div class="card card-custom h-100 p-3 p-md-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
                     <h5 class="fw-bold mb-0">Monthly Budgets</h5>
@@ -197,11 +205,11 @@
                             <span class="fw-bold">₹{{ "{:,.2f}".format(b.actual_spent) }}</span> / 
                             <span class="text-muted">₹{{ "{:,.2f}".format(b.limit_amount) }}</span>
                             {% if b.status == 'EXCEEDED' %}
-                            <span class="badge-soft-danger ms-2">Exceeded</span>
+                            <span class="badge-soft-danger ms-1 ms-sm-2">Exceeded</span>
                             {% elif b.status == 'WARNING' %}
-                            <span class="badge-soft-warning ms-2">Near Limit</span>
+                            <span class="badge-soft-warning ms-1 ms-sm-2">Near Limit</span>
                             {% else %}
-                            <span class="badge-soft-success ms-2">On Track</span>
+                            <span class="badge-soft-success ms-1 ms-sm-2">On Track</span>
                             {% endif %}
                         </div>
                     </div>
@@ -228,8 +236,8 @@
     </div>
 </div>
 
-<!-- Recent Transactions Ledger -->
-<div class="card card-custom p-4">
+<!-- Recent Transactions Feed -->
+<div class="card card-custom p-3 p-md-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h5 class="fw-bold mb-0">Recent Activity</h5>
@@ -238,7 +246,43 @@
         <a href="{{ url_for('transactions') }}" class="btn btn-sm btn-outline-primary">View All</a>
     </div>
 
-    <div class="table-responsive">
+    <!-- Mobile Transaction Card List (Visible on Mobile Only) -->
+    <div class="d-md-none">
+        {% if recent_transactions %}
+            <div class="list-group list-group-flush">
+                {% for t in recent_transactions %}
+                <div class="mobile-txn-card d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="txn-avatar {% if t.txn_type == 'Credit' %}txn-avatar-credit{% else %}txn-avatar-debit{% endif %}">
+                            <i class="bi {% if t.txn_type == 'Credit' %}bi-arrow-down-left{% elif 'Food' in t.category_name or 'Dining' in t.category_name %}bi-cup-hot-fill{% elif 'Shopping' in t.category_name %}bi-bag-fill{% elif 'Rent' in t.category_name or 'Housing' in t.category_name %}bi-house-door-fill{% elif 'Bill' in t.category_name or 'Utilities' in t.category_name %}bi-lightning-charge-fill{% elif 'Entertainment' in t.category_name %}bi-film{% elif 'Healthcare' in t.category_name %}bi-heart-pulse-fill{% elif 'Travel' in t.category_name or 'Transport' in t.category_name %}bi-car-front-fill{% else %}bi-receipt{% endif %}"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 165px; font-size: 0.92rem;">
+                                {{ t.vendor or t.description or 'Transaction' }}
+                            </div>
+                            <div class="d-flex align-items-center gap-1 mt-0.5" style="font-size: 0.74rem;">
+                                <span class="badge-category-mini">{{ t.category_name }}</span>
+                                <span class="text-muted">&bull;</span>
+                                <span class="text-muted">{{ t.formatted_date }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-end ps-2">
+                        <div class="fw-bold {% if t.txn_type == 'Credit' %}text-success{% else %}text-dark{% endif %} fs-6 text-nowrap">
+                            {% if t.txn_type == 'Credit' %}+{% else %}-{% endif %}₹{{ "{:,.2f}".format(t.amount) }}
+                        </div>
+                        <span class="badge-account-mini text-muted">{{ t.account_type }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-4 text-muted small">No recent transactions recorded.</div>
+        {% endif %}
+    </div>
+
+    <!-- Desktop Table View (Hidden on Mobile) -->
+    <div class="table-responsive d-none d-md-block">
         <table class="table table-modern">
             <thead>
                 <tr>
@@ -299,6 +343,7 @@
     {% if category_spend %}
     const catLabels = {{ category_spend | map(attribute='category_name') | list | tojson }};
     const catValues = {{ category_spend | map(attribute='total') | list | tojson }};
+    const isMobile = window.innerWidth < 768;
 
     const ctx = document.getElementById('expenseChart').getContext('2d');
     new Chart(ctx, {
@@ -320,11 +365,11 @@
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'right',
+                    position: isMobile ? 'bottom' : 'right',
                     labels: {
                         boxWidth: 12,
-                        padding: 14,
-                        font: { size: 12, family: 'Plus Jakarta Sans', weight: '600' }
+                        padding: isMobile ? 8 : 14,
+                        font: { size: 11, family: 'Plus Jakarta Sans', weight: '600' }
                     }
                 }
             },

@@ -13,9 +13,9 @@
 <div class="row g-4">
     <!-- Transfer Form (Left Column) -->
     <div class="col-lg-7">
-        <div class="card card-custom p-4">
+        <div class="card card-custom p-3 p-md-4">
             <!-- Nav Tabs: Between Accounts vs Pay Vendor -->
-            <ul class="nav nav-pills mb-4 nav-fill p-1 bg-light rounded-3" id="transferTabs" role="tablist">
+            <ul class="nav nav-pills mb-3 mb-md-4 nav-fill p-1 bg-light rounded-3" id="transferTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active fw-bold py-2" id="internal-tab" data-bs-toggle="pill" data-bs-target="#internal-pane" type="button" role="tab">
                         <i class="bi bi-arrow-left-right me-1"></i> Between My Accounts
@@ -35,9 +35,9 @@
                         <input type="hidden" name="transfer_type" value="internal">
 
                         <!-- Source Account -->
-                        <div class="mb-4">
+                        <div class="mb-3 mb-md-4">
                             <label class="form-label fw-bold text-muted small text-uppercase">Transfer From</label>
-                            <div class="p-3 bg-light rounded-3 border">
+                            <div class="p-2.5 p-md-3 bg-light rounded-3 border">
                                 <select name="from_account" id="fromAccountSelect" class="form-select border-0 bg-transparent fw-bold fs-6" required onchange="updateMaxAmount()">
                                     {% for acc in accounts %}
                                     <option value="{{ acc.account_id }}" data-balance="{{ acc.balance }}">
@@ -56,9 +56,9 @@
                         </div>
 
                         <!-- Destination Account -->
-                        <div class="mb-4">
+                        <div class="mb-3 mb-md-4">
                             <label class="form-label fw-bold text-muted small text-uppercase">Transfer To</label>
-                            <div class="p-3 bg-light rounded-3 border">
+                            <div class="p-2.5 p-md-3 bg-light rounded-3 border">
                                 <select name="to_account" class="form-select border-0 bg-transparent fw-bold fs-6" required>
                                     {% for acc in accounts %}
                                     <option value="{{ acc.account_id }}" {% if loop.index == 2 %}selected{% endif %}>
@@ -79,8 +79,8 @@
                                 <span class="input-group-text bg-light border-end-0 fw-bold text-muted">₹</span>
                                 <input type="number" step="0.01" min="1" name="amount" id="transferAmount" class="form-control border-start-0 fw-bold fs-4" placeholder="0.00" required>
                             </div>
-                            <!-- Preset Buttons -->
-                            <div class="d-flex gap-2 mt-2 flex-wrap">
+                            <!-- Preset Buttons Grid -->
+                            <div class="preset-grid mt-2">
                                 <button type="button" class="preset-btn" onclick="setPreset(500)">+ ₹500</button>
                                 <button type="button" class="preset-btn" onclick="setPreset(1000)">+ ₹1,000</button>
                                 <button type="button" class="preset-btn" onclick="setPreset(5000)">+ ₹5,000</button>
@@ -147,7 +147,7 @@
                                 <span class="input-group-text bg-light text-muted fw-bold">₹</span>
                                 <input type="number" step="0.01" min="1" name="amount" id="vendorAmount" class="form-control" placeholder="0.00" required>
                             </div>
-                            <div class="d-flex gap-2 mt-2 flex-wrap">
+                            <div class="preset-grid mt-2">
                                 <button type="button" class="preset-btn" onclick="setVendorPreset(500)">+ ₹500</button>
                                 <button type="button" class="preset-btn" onclick="setVendorPreset(1000)">+ ₹1,000</button>
                                 <button type="button" class="preset-btn" onclick="setVendorPreset(5000)">+ ₹5,000</button>
