@@ -85,7 +85,6 @@ DBMS_project/
     ├── budgets.html            # Category budget health from database view
     ├── recurring.html          # Subscriptions & one-click Cursor procedure execution
     ├── predictions.html        # Window function moving average forecasts & charts
-    ├── dbms_showcase.html      # Comprehensive viva / professor evaluation showcase
     ├── login.html              # Clean sign-in page
     └── register.html           # New user registration page
 ```
