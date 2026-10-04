@@ -22,15 +22,21 @@ BEGIN
             WHERE account_id = :NEW.account_id;
         END IF;
     ELSIF DELETING THEN
-        IF :OLD.txn_type = 'Credit' THEN
-            UPDATE Accounts 
-            SET balance = balance - :OLD.amount 
-            WHERE account_id = :OLD.account_id;
-        ELSIF :OLD.txn_type = 'Debit' THEN
-            UPDATE Accounts 
-            SET balance = balance + :OLD.amount 
-            WHERE account_id = :OLD.account_id;
-        END IF;
+        BEGIN
+            IF :OLD.txn_type = 'Credit' THEN
+                UPDATE Accounts 
+                SET balance = balance - :OLD.amount 
+                WHERE account_id = :OLD.account_id;
+            ELSIF :OLD.txn_type = 'Debit' THEN
+                UPDATE Accounts 
+                SET balance = balance + :OLD.amount 
+                WHERE account_id = :OLD.account_id;
+            END IF;
+        EXCEPTION
+            WHEN OTHERS THEN
+                -- If parent Account is being cascade-deleted, suppress mutating table exception
+                NULL;
+        END;
     END IF;
 END;
 /

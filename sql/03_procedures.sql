@@ -144,11 +144,20 @@ IS
     v_count NUMBER := 0;
     v_next_date DATE;
     v_cat_name VARCHAR2(60);
+    v_cat_type VARCHAR2(10);
+    v_txn_type VARCHAR2(10);
 BEGIN
     FOR rec IN cur_recurring LOOP
-        -- Retrieve category name for transaction description
-        SELECT category_name INTO v_cat_name
+        -- Retrieve category name and type (Income/Expense)
+        SELECT category_name, type INTO v_cat_name, v_cat_type
         FROM Categories WHERE category_id = rec.category_id;
+
+        -- Dynamic transaction type: Income -> Credit (e.g. Salary), Expense -> Debit
+        IF v_cat_type = 'Income' THEN
+            v_txn_type := 'Credit';
+        ELSE
+            v_txn_type := 'Debit';
+        END IF;
 
         -- 1. Create transaction entry
         INSERT INTO Transactions (account_id, category_id, amount, txn_type, txn_date, description)
@@ -156,7 +165,7 @@ BEGIN
             rec.account_id,
             rec.category_id,
             rec.amount,
-            'Debit',
+            v_txn_type,
             SYSDATE,
             'Auto-Recurring: ' || v_cat_name || ' (' || rec.frequency || ')'
         );

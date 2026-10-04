@@ -29,7 +29,7 @@
             </div>
         </div>
 
-        <div class="mb-4">
+        <div class="mb-3">
             <label class="form-label fw-bold small text-muted text-uppercase">Password</label>
             <div class="input-group">
                 <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-lock"></i></span>
@@ -37,8 +37,28 @@
             </div>
         </div>
 
+        <div class="p-3 mb-4 rounded-3 border bg-light bg-opacity-50">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label fw-bold small text-dark text-uppercase mb-0">
+                    <i class="bi bi-cash-coin text-success me-1"></i> Monthly Salary / Opening Balance (₹)
+                </label>
+                <span class="badge bg-success text-white small" style="font-size: 0.68rem;">Recommended</span>
+            </div>
+            <div class="input-group mb-2">
+                <span class="input-group-text bg-white text-muted border-end-0">₹</span>
+                <input type="number" step="0.01" min="0" name="initial_salary" class="form-control border-start-0 bg-white" placeholder="50000.00" value="50000.00">
+            </div>
+            <div class="input-group input-group-sm mb-2">
+                <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-building"></i></span>
+                <input type="text" name="employer" class="form-control border-start-0 bg-white" placeholder="Employer / Company Name (Optional)">
+            </div>
+            <div class="form-text small text-muted" style="font-size: 0.75rem;">
+                <i class="bi bi-info-circle text-primary me-1"></i> Automatically credited to your default Savings account via database trigger so you can start budgeting and tracking expenses immediately.
+            </div>
+        </div>
+
         <button type="submit" class="btn btn-primary w-100 py-3 fw-bold">
-            Create Account
+            Create Account & Get Started
         </button>
     </form>
 

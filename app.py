@@ -267,9 +267,17 @@ def register():
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '').strip()
+        
+        salary_str = request.form.get('initial_salary', '').strip()
+        try:
+            salary_amount = float(salary_str) if salary_str else 0.0
+        except ValueError:
+            salary_amount = 0.0
+            
+        employer = request.form.get('employer', '').strip() or 'Employer / Salary'
 
         if not name or not email or not password:
-            flash("All fields are required.", "danger")
+            flash("All required fields must be filled.", "danger")
             return render_template('register.html')
 
         existing = db.query_one("SELECT user_id FROM Users WHERE email = :email", {'email': email})
@@ -290,17 +298,34 @@ def register():
             new_uid = int(user_id_var.getvalue()[0])
             
             # Create a default Savings account
+            acc_id_var = cursor.var(oracledb.NUMBER)
             cursor.execute(
-                "INSERT INTO Accounts (user_id, account_type, balance) VALUES (:1, 'Savings', 0.00)",
-                [new_uid]
+                "INSERT INTO Accounts (user_id, account_type, balance) VALUES (:1, 'Savings', 0.00) RETURNING account_id INTO :2",
+                [new_uid, acc_id_var]
             )
+            new_acc_id = int(acc_id_var.getvalue()[0])
+
+            # If user specified an initial salary or opening balance, record it as a Credit transaction
+            # The database trigger trg_update_account_balance will automatically update the account balance!
+            if salary_amount > 0:
+                cursor.execute(
+                    """INSERT INTO Transactions (account_id, category_id, amount, txn_type, txn_date, vendor, description)
+                       VALUES (:1, 1, :2, 'Credit', SYSDATE, :3, 'Monthly Salary / Initial Deposit')""",
+                    [new_acc_id, salary_amount, employer]
+                )
+
             conn.commit()
             
             session['user_id'] = new_uid
             session['user_name'] = name
             session['user_email'] = email
             session['user_role'] = 'USER'
-            flash("Account registered successfully! Welcome to FinTrack.", "success")
+
+            if salary_amount > 0:
+                flash(f"🎉 Account registered successfully! Initial salary of ₹{salary_amount:,.2f} has been credited to your Savings account.", "success")
+            else:
+                flash("Account registered successfully! Welcome to FinTrack. Add your monthly salary to get started.", "success")
+
             return redirect(url_for('dashboard'))
         except Exception as e:
             conn.rollback()
@@ -378,6 +403,12 @@ def dashboard():
 
     cycle = get_monthly_cycle_data(user['id'], current_month)
 
+    # Active user accounts for quick transactions & salary deposits
+    user_accounts = db.query_all(
+        "SELECT account_id, account_type, balance, status FROM Accounts WHERE user_id = :usr_id AND status = 'Active' ORDER BY account_id",
+        {'usr_id': user['id']}
+    )
+
     return render_template(
         'index.html',
         total_balance=total_balance,
@@ -388,7 +419,8 @@ def dashboard():
         budgets=budgets,
         category_spend=category_spend,
         current_month=current_month,
-        cycle=cycle
+        cycle=cycle,
+        accounts=user_accounts
     )
 
 @app.route('/accounts')
@@ -451,6 +483,59 @@ def create_account():
         conn.close()
 
     return redirect(url_for('accounts'))
+
+@app.route('/salary/deposit', methods=['POST'])
+def deposit_salary():
+    """Allows users to record their monthly salary or income deposit with automatic trigger balance update."""
+    user = get_current_user()
+    try:
+        account_id = int(request.form.get('account_id', 0))
+        amount = float(request.form.get('amount', 0))
+    except (ValueError, TypeError):
+        flash("Invalid salary amount or account selected.", "danger")
+        return redirect(request.referrer or url_for('dashboard'))
+
+    if amount <= 0:
+        flash("Salary amount must be strictly greater than zero.", "danger")
+        return redirect(request.referrer or url_for('dashboard'))
+
+    employer = request.form.get('employer', '').strip() or 'Employer / Salary'
+    description = request.form.get('description', '').strip() or 'Monthly Salary Credit'
+    salary_date = request.form.get('salary_date', '').strip()
+
+    # Verify that the account belongs to the user and is Active
+    acc = db.query_one(
+        "SELECT account_id, account_type, status FROM Accounts WHERE account_id = :aid AND user_id = :usr_id",
+        {'aid': account_id, 'usr_id': user['id']}
+    )
+    if not acc:
+        flash("Selected account not found or access denied.", "danger")
+        return redirect(request.referrer or url_for('dashboard'))
+
+    if acc.get('status') == 'Frozen':
+        flash(f"Cannot deposit salary: Account #{account_id} is Frozen. Please unfreeze it first.", "danger")
+        return redirect(request.referrer or url_for('dashboard'))
+
+    try:
+        # Category 1 = Salary (Income)
+        # Database trigger trg_update_account_balance automatically adds this amount to the account balance!
+        if salary_date:
+            db.execute_dml(
+                """INSERT INTO Transactions (account_id, category_id, amount, txn_type, txn_date, vendor, description)
+                   VALUES (:1, 1, :2, 'Credit', TO_DATE(:3 || ' ' || TO_CHAR(SYSDATE, 'HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS'), :4, :5)""",
+                [account_id, amount, salary_date, employer, description]
+            )
+        else:
+            db.execute_dml(
+                """INSERT INTO Transactions (account_id, category_id, amount, txn_type, txn_date, vendor, description)
+                   VALUES (:1, 1, :2, 'Credit', SYSDATE, :3, :4)""",
+                [account_id, amount, employer, description]
+            )
+        flash(f"🎉 Monthly salary of ₹{amount:,.2f} successfully credited to your {acc['account_type']} account! Live balance updated by trigger.", "success")
+    except Exception as e:
+        flash(f"Failed to record salary deposit: {str(e)}", "danger")
+
+    return redirect(request.referrer or url_for('dashboard'))
 
 @app.route('/transactions')
 def transactions():
