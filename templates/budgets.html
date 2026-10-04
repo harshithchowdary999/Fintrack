@@ -8,10 +8,13 @@
         <h3 class="fw-bold mb-1">Monthly Budgets</h3>
         <p class="text-muted mb-0 small">Set spending targets and get flagged before you overspend.</p>
     </div>
-    <div class="d-flex gap-2 w-100 w-sm-auto mt-2 mt-sm-0">
+    <div class="d-flex gap-2 w-100 w-sm-auto mt-2 mt-sm-0 flex-wrap">
         <a href="{{ url_for('setup') }}" class="btn btn-outline-primary">
             <i class="bi bi-sliders me-1"></i> Smart Budget Planner
         </a>
+        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reduceSalaryModal" title="Simulate or apply salary reduction and auto-downscale budgets">
+            <i class="bi bi-graph-down-arrow me-1"></i> Salary Cut / Downscale
+        </button>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newBudgetModal">
             <i class="bi bi-plus-lg me-1"></i> Add Single Budget
         </button>
@@ -251,4 +254,165 @@
         </div>
     </div>
 </div>
+
+<!-- Modal: Salary Reduction & Dynamic Budget Downscaler (PL/SQL Stored Procedure) -->
+<div class="modal fade" id="reduceSalaryModal" tabindex="-1" aria-labelledby="reduceSalaryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white border-0 py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-graph-down-arrow fs-4"></i>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="reduceSalaryModalLabel">Salary Reduction & Budget Downscaler</h5>
+                        <p class="small mb-0 text-white-50">Automated Oracle PL/SQL <code>handle_salary_reduction</code> Procedure</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('reduce_salary') }}" id="salaryReductionFormBudgets">
+                <div class="modal-body p-3 p-md-4">
+                    <!-- Context alert banner -->
+                    <div class="alert alert-warning border-warning d-flex align-items-start gap-2 p-3 rounded-3 mb-3">
+                        <i class="bi bi-shield-exclamation fs-4 text-warning flex-shrink-0"></i>
+                        <div class="small">
+                            <strong>Protect against negative cash flow:</strong> When your take-home pay is reduced, this tool automatically updates your baseline salary in Oracle and safely recalculates all category budget caps to prevent deficit spending.
+                        </div>
+                    </div>
+
+                    <!-- Current vs New Salary -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Current Monthly Salary</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">₹</span>
+                                <input type="text" class="form-control bg-light fw-bold text-dark fs-5" 
+                                       value="{{ '{:,.2f}'.format(monthly_salary or 60000.0) }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-danger text-uppercase">New Reduced Salary (₹)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-danger bg-opacity-10 text-danger fw-bold">₹</span>
+                                <input type="number" step="100" min="1" name="new_salary" id="budgetNewReducedSalaryInput" 
+                                       class="form-control fw-bold fs-5 text-danger border-danger" 
+                                       value="{{ '{:.2f}'.format((monthly_salary or 60000.0) * 0.75) }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Reduction Shortcut Buttons -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Quick Reduction Presets</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="applyBudgetCutPercent(0.10)">
+                                -10% Cut
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-semibold" onclick="applyBudgetCutPercent(0.20)">
+                                -20% Pay Cut
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="applyBudgetCutPercent(0.35)">
+                                -35% Significant Cut
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger fw-bold" onclick="applyBudgetCutPercent(0.50)">
+                                -50% Emergency Halving
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Rebalancing Strategy Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Downscaling Strategy</label>
+                        <select name="strategy" id="budgetReductionStrategySelect" class="form-select fw-semibold" onchange="previewBudgetReduction()">
+                            <option value="LEAN_70_20_10" selected>
+                                ⚡ 70/20/10 Lean Cut (70% Essentials, 20% Flexible Wants, 10% Safety Cushion)
+                            </option>
+                            <option value="SURVIVAL_80_20">
+                                🛡️ 80/20 Survival Mode (80% Necessities, 0% Wants/Dining/Shopping, 20% Emergency)
+                            </option>
+                            <option value="PROPORTIONAL">
+                                ⚖️ Proportional Downscale (Scale existing category limits down proportionally)
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Reduction Cause / Reason -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Reason for Adjustment</label>
+                        <input type="text" name="reduction_reason" class="form-control" 
+                               placeholder="e.g. Salary Reduction / Variable Freelance Month / Medical Leave" 
+                               value="Salary Reduction & Austerity Rebalancing">
+                        <div class="form-text small text-muted">This rationale is logged into Oracle audit and alerts.</div>
+                    </div>
+
+                    <!-- Live Reduction Preview Summary Box -->
+                    <div class="p-3 rounded-3 bg-light border">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small text-muted fw-bold text-uppercase">Projected Total Budget Ceiling:</span>
+                            <span class="fw-bold text-primary fs-6" id="budgetPreviewProjectedBudget">₹42,000.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small text-muted fw-bold text-uppercase">Projected Monthly Savings / Cushion:</span>
+                            <span class="fw-bold text-success fs-6" id="budgetPreviewProjectedSavings">₹3,000.00 (6.7%)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger fw-bold px-4 shadow-sm">
+                        <i class="bi bi-check-circle-fill me-1"></i> Apply Salary Reduction & Downscale
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const budgetCurrentSalary = parseFloat({{ monthly_salary or 60000.0 }});
+
+    function applyBudgetCutPercent(cutRatio) {
+        const newSalary = Math.round(budgetCurrentSalary * (1 - cutRatio) / 100) * 100;
+        const inputEl = document.getElementById('budgetNewReducedSalaryInput');
+        if (inputEl) {
+            inputEl.value = newSalary;
+            previewBudgetReduction();
+        }
+    }
+
+    function previewBudgetReduction() {
+        const inputEl = document.getElementById('budgetNewReducedSalaryInput');
+        const stratEl = document.getElementById('budgetReductionStrategySelect');
+        const projBudgetEl = document.getElementById('budgetPreviewProjectedBudget');
+        const projSavEl = document.getElementById('budgetPreviewProjectedSavings');
+
+        if (!inputEl || !stratEl || !projBudgetEl || !projSavEl) return;
+
+        const newSal = parseFloat(inputEl.value) || 0;
+        const strat = stratEl.value;
+        let budgetRatio = 0.85;
+
+        if (strat === 'LEAN_70_20_10') {
+            budgetRatio = 0.90;
+        } else if (strat === 'SURVIVAL_80_20') {
+            budgetRatio = 0.80;
+        } else {
+            budgetRatio = 0.85;
+        }
+
+        const projBudget = Math.round(newSal * budgetRatio);
+        const projSavings = Math.max(0, newSal - projBudget);
+        const savingsPct = newSal > 0 ? ((projSavings / newSal) * 100).toFixed(1) : 0;
+
+        projBudgetEl.innerText = `₹${projBudget.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        projSavEl.innerText = `₹${projSavings.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${savingsPct}%)`;
+    }
+
+    const bReducedSalInput = document.getElementById('budgetNewReducedSalaryInput');
+    if (bReducedSalInput) {
+        bReducedSalInput.addEventListener('input', previewBudgetReduction);
+        previewBudgetReduction();
+    }
+</script>
 {% endblock %}

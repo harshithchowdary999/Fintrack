@@ -267,3 +267,123 @@ EXCEPTION
         RAISE;
 END;
 /
+
+-- 5. Stored Procedure: handle_salary_reduction
+-- Dynamically adjusts monthly income and rebalances/downscales category budgets
+-- to protect financial balance when salary decreases or changes.
+CREATE OR REPLACE PROCEDURE handle_salary_reduction (
+    p_user_id             IN NUMBER,
+    p_new_salary          IN NUMBER,
+    p_reduction_reason    IN VARCHAR2,
+    p_strategy            IN VARCHAR2,
+    p_month               IN VARCHAR2,
+    p_out_old_salary      OUT NUMBER,
+    p_out_adjusted_budget OUT NUMBER,
+    p_out_status          OUT VARCHAR2
+)
+IS
+    v_old_salary NUMBER(12,2);
+    v_total_new_budget NUMBER(12,2) := 0;
+    v_alert_msg VARCHAR2(400);
+BEGIN
+    IF p_new_salary <= 0 THEN
+        RAISE_APPLICATION_ERROR(-20010, 'New salary must be greater than zero.');
+    END IF;
+
+    SELECT NVL(monthly_salary, 0) INTO v_old_salary
+    FROM Users
+    WHERE user_id = p_user_id;
+
+    p_out_old_salary := v_old_salary;
+
+    -- Update User's monthly salary
+    UPDATE Users
+    SET monthly_salary = p_new_salary
+    WHERE user_id = p_user_id;
+
+    -- Apply reduction strategy to category budgets
+    IF p_strategy = 'SURVIVAL_80_20' THEN
+        -- 80% to core essentials, 0% to discretionary wants
+        MERGE INTO Budgets b
+        USING (
+            SELECT c.category_id,
+                   CASE 
+                       WHEN c.category_name = 'Rent & Housing' THEN ROUND(p_new_salary * 0.40, -2)
+                       WHEN c.category_name = 'Groceries' THEN ROUND(p_new_salary * 0.22, -2)
+                       WHEN c.category_name = 'Utilities' THEN ROUND(p_new_salary * 0.08, -2)
+                       WHEN c.category_name = 'Healthcare' THEN ROUND(p_new_salary * 0.05, -2)
+                       WHEN c.category_name = 'Transportation' THEN ROUND(p_new_salary * 0.05, -2)
+                       ELSE 0
+                   END AS new_limit
+            FROM Categories c
+            WHERE c.type = 'Expense'
+        ) src
+        ON (b.user_id = p_user_id AND b.category_id = src.category_id AND b.month = p_month)
+        WHEN MATCHED THEN
+            UPDATE SET b.limit_amount = src.new_limit
+            DELETE WHERE src.new_limit <= 0
+        WHEN NOT MATCHED THEN
+            INSERT (user_id, category_id, month, limit_amount)
+            VALUES (p_user_id, src.category_id, p_month, src.new_limit)
+            WHERE src.new_limit > 0;
+
+    ELSIF p_strategy = 'LEAN_70_20_10' THEN
+        -- 70% Essentials, 20% Wants, 10% Cushion
+        MERGE INTO Budgets b
+        USING (
+            SELECT c.category_id,
+                   CASE 
+                       WHEN c.category_name = 'Rent & Housing' THEN ROUND(p_new_salary * 0.35, -2)
+                       WHEN c.category_name = 'Groceries' THEN ROUND(p_new_salary * 0.18, -2)
+                       WHEN c.category_name = 'Utilities' THEN ROUND(p_new_salary * 0.07, -2)
+                       WHEN c.category_name = 'Healthcare' THEN ROUND(p_new_salary * 0.05, -2)
+                       WHEN c.category_name = 'Transportation' THEN ROUND(p_new_salary * 0.05, -2)
+                       WHEN c.category_name = 'Food & Dining' THEN ROUND(p_new_salary * 0.08, -2)
+                       WHEN c.category_name = 'Shopping' THEN ROUND(p_new_salary * 0.05, -2)
+                       WHEN c.category_name = 'Entertainment' THEN ROUND(p_new_salary * 0.04, -2)
+                       WHEN c.category_name = 'Subscriptions' THEN ROUND(p_new_salary * 0.03, -2)
+                       ELSE ROUND(p_new_salary * 0.03, -2)
+                   END AS new_limit
+            FROM Categories c
+            WHERE c.type = 'Expense'
+        ) src
+        ON (b.user_id = p_user_id AND b.category_id = src.category_id AND b.month = p_month)
+        WHEN MATCHED THEN
+            UPDATE SET b.limit_amount = src.new_limit
+        WHEN NOT MATCHED THEN
+            INSERT (user_id, category_id, month, limit_amount)
+            VALUES (p_user_id, src.category_id, p_month, src.new_limit);
+
+    ELSE
+        -- Proportional downscale of existing budgets
+        UPDATE Budgets
+        SET limit_amount = CASE 
+            WHEN limit_amount * 0.8 > 500 THEN ROUND(limit_amount * (p_new_salary / GREATEST(v_old_salary, 1)), -2)
+            ELSE limit_amount
+        END
+        WHERE user_id = p_user_id AND month = p_month;
+    END IF;
+
+    -- Calculate new total budget
+    SELECT NVL(SUM(limit_amount), 0) INTO v_total_new_budget
+    FROM Budgets
+    WHERE user_id = p_user_id AND month = p_month;
+
+    p_out_adjusted_budget := v_total_new_budget;
+
+    -- Log system alert in Alerts table
+    v_alert_msg := '📉 Salary Reduced: Monthly salary updated to ₹' || TO_CHAR(p_new_salary, '999,999.00') || 
+                   ' (Reason: ' || SUBSTR(NVL(p_reduction_reason, 'Income adjustment'), 1, 60) || '). ' ||
+                   'Budgets downscaled to ₹' || TO_CHAR(v_total_new_budget, '999,999.00') || ' to prevent deficit.';
+    
+    INSERT INTO Alerts (user_id, message, alert_type)
+    VALUES (p_user_id, v_alert_msg, 'WARNING');
+
+    p_out_status := 'SUCCESS';
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        p_out_status := 'ERROR: ' || SQLERRM;
+END;
+/

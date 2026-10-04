@@ -220,7 +220,7 @@ def require_login():
             'dashboard', 'setup', 'accounts', 'create_account', 'toggle_account_status',
             'transactions', 'create_transaction', 'export_transactions',
             'transfer', 
-            'budgets', 'set_budget', 
+            'budgets', 'set_budget', 'reduce_salary',
             'recurring', 'add_recurring', 'run_recurring_procedure', 
             'predictions', 'generate_predictions_procedure'
         ]
@@ -555,6 +555,69 @@ def dashboard():
         is_salary_deficit=is_salary_deficit,
         deficit_amount=deficit_amount
     )
+
+@app.route('/reduce-salary', methods=['POST'])
+def reduce_salary():
+    """Dynamically applies a salary reduction / pay cut and invokes Oracle PL/SQL handle_salary_reduction."""
+    user = get_current_user()
+    current_month = datetime.now().strftime('%Y-%m')
+    
+    try:
+        new_salary = float(request.form.get('new_salary', 0) or 0)
+    except (ValueError, TypeError):
+        new_salary = 0.0
+
+    reduction_reason = request.form.get('reduction_reason', '').strip() or 'Salary Reduction / Variable Income'
+    strategy = request.form.get('strategy', 'LEAN_70_20_10').strip()
+
+    if new_salary <= 0:
+        flash("Please enter a valid reduced salary amount greater than zero.", "danger")
+        return redirect(request.referrer or url_for('dashboard'))
+
+    conn = db.get_connection()
+    cur = conn.cursor()
+    try:
+        old_salary_var = cur.var(oracledb.NUMBER)
+        adjusted_budget_var = cur.var(oracledb.NUMBER)
+        status_var = cur.var(oracledb.STRING)
+
+        cur.callproc("handle_salary_reduction", [
+            user['id'],
+            new_salary,
+            reduction_reason,
+            strategy,
+            current_month,
+            old_salary_var,
+            adjusted_budget_var,
+            status_var
+        ])
+        
+        status_res = status_var.getvalue()
+        old_sal = old_salary_var.getvalue() or 0.0
+        adj_budget = adjusted_budget_var.getvalue() or 0.0
+
+        if status_res and status_res.startswith('ERROR'):
+            flash(f"Database error executing salary reduction: {status_res}", "danger")
+        else:
+            diff = old_sal - new_salary
+            strategy_names = {
+                'LEAN_70_20_10': '70/20/10 Lean Cut',
+                'SURVIVAL_80_20': '80/20 Emergency Survival',
+                'PROPORTIONAL': 'Proportional Downscale'
+            }
+            strat_label = strategy_names.get(strategy, strategy)
+            flash(
+                f"📉 Salary reduction successfully applied via Oracle PL/SQL! Monthly income adjusted from ₹{old_sal:,.2f} to ₹{new_salary:,.2f} (-₹{diff:,.2f}). "
+                f"All category budgets were automatically downscaled to ₹{adj_budget:,.2f} using the {strat_label} strategy to prevent overdrafts.",
+                "warning"
+            )
+    except Exception as e:
+        flash(f"Error applying salary reduction: {str(e)}", "danger")
+    finally:
+        cur.close()
+        conn.close()
+
+    return redirect(url_for('dashboard'))
 
 @app.route('/accounts')
 def accounts():
@@ -1049,12 +1112,16 @@ def budgets():
 
     cycle = get_monthly_cycle_data(user['id'], selected_month)
 
+    user_info = db.query_one("SELECT NVL(monthly_salary, 0) AS monthly_salary FROM Users WHERE user_id = :usr_id", {'usr_id': user['id']})
+    monthly_salary = float(user_info['monthly_salary']) if user_info and user_info.get('monthly_salary') else 0.0
+
     return render_template(
         'budgets.html',
         budgets=budget_items,
         categories=expense_categories,
         selected_month=selected_month,
-        cycle=cycle
+        cycle=cycle,
+        monthly_salary=monthly_salary
     )
 
 @app.route('/recurring')
