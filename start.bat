@@ -1,5 +1,5 @@
 @echo off
-title FinTrack - Server & Phone Tunnel
+title FinTrack - Server and Phone Tunnel
 cd /d "%~dp0"
 echo ===================================================
 echo     FinTrack - Starting Server and Phone Link
